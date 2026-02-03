@@ -2,212 +2,151 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cyber-System Terminal Quiz</title>
+    <title>CyberTeam Terminal</title>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
-        :root {
-            --neon-blue: #00f3ff;
-            --neon-pink: #ff00ff;
-            --terminal-green: #00ff41;
-            --bg-dark: #05080a;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: 'Courier New', Courier, monospace;
-            background-color: var(--bg-dark);
-            background-image: linear-gradient(rgba(5, 8, 10, 0.85), rgba(5, 8, 10, 0.85)), 
-                              url('https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1920&q=80');
-            background-size: cover;
-            background-attachment: fixed;
-            color: #fff;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .container {
-            width: 95%;
-            max-width: 800px;
-            background: rgba(10, 15, 20, 0.9);
-            border: 2px solid var(--neon-blue);
-            box-shadow: 0 0 30px rgba(0, 243, 255, 0.2);
-            border-radius: 5px;
-            padding: 2px;
-            position: relative;
-        }
-
-        /* Scanline Effect */
-        .container::after {
-            content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
-            background-size: 100% 4px; pointer-events: none;
-        }
-
-        .header { padding: 25px; border-bottom: 1px solid rgba(0, 243, 255, 0.3); text-align: center; }
-        
-        .progress-container { width: 100%; height: 4px; background: #111; margin-bottom: 15px; display: none; }
-        .progress-bar { height: 100%; background: var(--neon-blue); width: 0%; box-shadow: 0 0 15px var(--neon-blue); }
-
-        .content { padding: 40px; min-height: 300px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-
-        .start-screen { text-align: center; }
-        .start-screen h2 { color: var(--terminal-green); margin-bottom: 20px; letter-spacing: 5px; }
-
-        .option {
-            width: 100%; border: 1px solid rgba(0, 243, 255, 0.2);
-            padding: 15px; margin: 10px 0; cursor: pointer;
-            background: rgba(255, 255, 255, 0.03); transition: 0.3s;
-        }
-        .option:hover { background: rgba(0, 243, 255, 0.1); border-color: var(--neon-blue); transform: translateX(5px); }
-
-        .btn {
-            background: transparent; color: var(--neon-blue); border: 1px solid var(--neon-blue);
-            padding: 15px 40px; cursor: pointer; font-family: inherit; font-weight: bold;
-            letter-spacing: 3px; text-transform: uppercase; transition: 0.3s;
-        }
-        .btn:hover { background: var(--neon-blue); color: #000; box-shadow: 0 0 20px var(--neon-blue); }
-
-        .timer { font-size: 1.5em; color: var(--neon-blue); font-weight: bold; }
-        .warning { color: var(--neon-pink); text-shadow: 0 0 10px var(--neon-pink); }
-        .correct { border-color: var(--terminal-green) !important; color: var(--terminal-green); background: rgba(0, 255, 65, 0.1) !important; }
-        .incorrect { border-color: var(--neon-pink) !important; color: var(--neon-pink); background: rgba(255, 0, 255, 0.1) !important; }
+        :root { --blue: #00f3ff; --green: #00ff41; --pink: #ff00ff; --bg: #05080a; }
+        body { font-family: 'Courier New', monospace; background: var(--bg); color: #fff; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .container { width: 90%; max-width: 600px; border: 2px solid var(--blue); padding: 30px; background: rgba(0,0,0,0.95); box-shadow: 0 0 20px var(--blue); }
+        .btn { background: transparent; color: var(--blue); border: 1px solid var(--blue); padding: 15px; cursor: pointer; width: 100%; margin: 10px 0; text-transform: uppercase; font-family: inherit; }
+        .btn:hover { background: var(--blue); color: #000; box-shadow: 0 0 10px var(--blue); }
+        .input-f { width: 100%; padding: 15px; background: transparent; border: 1px solid var(--green); color: var(--green); margin: 10px 0; outline: none; font-family: inherit; }
+        .hidden { display: none; }
+        .score-row { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #222; color: var(--green); }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
-        <h1 id="mainTitle">[ SYSTEM_IDLE ]</h1>
-        <div class="progress-container" id="pContainer"><div class="progress-bar" id="pBar"></div></div>
-        <div id="statsRow" style="display:none; justify-content: space-between; color: var(--terminal-green); font-size: 0.8em;">
-            <span>ENCRYPTION: ACTIVE</span>
-            <div id="timer" class="timer">30s</div>
-            <span>NODE: <span id="qNum">1</span>/20</span>
-        </div>
+<div class="container" id="terminal">
+    <div id="start-menu">
+        <h2 style="color:var(--blue)">[ SYSTEM_INIT ]</h2>
+        <button class="btn" onclick="showCreate()">Create Team (Creator)</button>
+        <button class="btn" onclick="showJoin()">Join Team (Teammate)</button>
     </div>
 
-    <div class="content" id="quiz">
-        <div class="start-screen">
-            <h2>TERMINAL READY</h2>
-            <p style="margin-bottom: 30px; color: #888;">Hardware & Software Knowledge Verification Required.</p>
-            <button class="btn" onclick="startQuiz()">Initialize Boot</button>
-        </div>
+    <div id="create-screen" class="hidden">
+        <input type="text" id="team-name" class="input-f" placeholder="TEAM NAME...">
+        <button class="btn" onclick="createTeam()">Get Team Code</button>
+    </div>
+
+    <div id="join-screen" class="hidden">
+        <input type="text" id="join-code" class="input-f" placeholder="ENTER 4-DIGIT CODE">
+        <input type="text" id="p-name" class="input-f" placeholder="YOUR NAME">
+        <button class="btn" onclick="joinTeam()">Link to Team</button>
+    </div>
+
+    <div id="lobby-screen" class="hidden">
+        <h3 id="team-display" style="color:var(--blue)"></h3>
+        <p>GIVE THIS CODE TO TEAM: <span id="code-display" style="color:var(--pink); font-size:1.8em"></span></p>
+        <div id="player-list" style="border:1px dashed #444; padding:15px; margin:20px 0;"></div>
+        <button id="start-btn" class="btn hidden" onclick="startQuiz()">START QUIZ (CREATOR ONLY)</button>
+    </div>
+
+    <div id="quiz-screen" class="hidden">
+        <div id="q-text" style="margin-bottom:20px; font-size:1.2em; border-left: 3px solid var(--blue); padding-left:10px;"></div>
+        <div id="options"></div>
+        <div id="leaderboard" style="margin-top:30px; border-top:1px solid var(--blue); padding-top:15px"></div>
     </div>
 </div>
 
 <script>
-const questions=[
-    {q:"> Brain of the computer system?", o:["RAM","CPU","Monitor","Hard Disk"], a:1},
-    {q:"> Which memory is volatile?", o:["ROM","RAM","SSD","DVD"], a:1},
-    {q:"> What does HTTP stand for?", o:["Hyper Text Transfer Protocol","High Text Transfer Protocol","Hyper Tool Transfer Protocol","None"], a:0},
-    {q:"> Signal conversion device (D to A)?", o:["Router","Modem","Hub","Switch"], a:1},
-    {q:"> Primary input device?", o:["Printer","Speaker","Keyboard","Monitor"], a:2},
-    {q:"> Copy command shortcut?", o:["Ctrl+X","Ctrl+V","Ctrl+C","Ctrl+Z"], a:2},
-    {q:"> Example of System Software?", o:["Excel","Windows","Photoshop","Chrome"], a:1},
-    {q:"> Standard computer number system?", o:["Decimal","Binary","Octal","Hexa"], a:1},
-    {q:"> Fastest data retrieval device?", o:["HDD","SSD","CD","Floppy"], a:1},
-    {q:"> Full form of CPU?", o:["Central Program Unit","Central Processing Unit","Computer Processing Unit","None"], a:1},
-    {q:"> Refresh key for browsers?", o:["F2","F5","F1","F12"], a:1},
-    {q:"> Which is NOT an OS?", o:["Linux","Windows","Oracle","MacOS"], a:2},
-    {q:"> Full form of URL?", o:["Uniform Resource Locator","Universal Resource Locator","Unified Link","None"], a:0},
-    {q:"> Hardware for local networking?", o:["Scanner","Switch","Printer","Plotter"], a:1},
-    {q:"> Cloud storage service example?", o:["Hard Disk","DVD","Google Drive","Pen Drive"], a:2},
-    {q:"> What does USB stand for?", o:["Universal Serial Bus","Unique Serial Bus","Unified Bus","None"], a:0},
-    {q:"> Spreadsheet management tool?", o:["Word","Excel","PowerPoint","Paint"], a:1},
-    {q:"> Software that bridges hardware/apps?", o:["Utility","Application","System","Programming"], a:2},
-    {q:"> Topology with a central node?", o:["Ring","Bus","Star","Mesh"], a:2},
-    {q:"> Anti-malware defense software?", o:["Firewall","Antivirus","Router","Modem"], a:1}
+// Your specific Firebase Config from image_a90fa0.png
+const firebaseConfig = {
+  apiKey: "AIzaSyB-EQmy86TNealf_VZB32H3p-bWSyDNE9k",
+  authDomain: "cyberquizsync.firebaseapp.com",
+  projectId: "cyberquizsync",
+  storageBucket: "cyberquizsync.firebasestorage.app",
+  messagingSenderId: "241572824298",
+  appId: "1:241572824298:web:8941756bda23f03af8c393",
+  measurementId: "G-WRS1YXN3T2"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+let roomCode = "";
+let playerName = "";
+let isHost = false;
+
+// Question Bank
+const questions = [
+    {q: "Which hardware is the brain of the PC?", o: ["RAM", "CPU", "Disk"], a: 1},
+    {q: "Which memory is volatile?", o: ["ROM", "RAM", "SSD"], a: 1},
+    {q: "What connects computers in a LAN?", o: ["Switch", "Scanner", "Printer"], a: 0}
 ];
 
-let current=0, score=0, time=30, timer, answered=false;
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+// Navigation Functions
+function showCreate() { hide(); document.getElementById('create-screen').classList.remove('hidden'); }
+function showJoin() { hide(); document.getElementById('join-screen').classList.remove('hidden'); }
+function hide() { ['start-menu','create-screen','join-screen','lobby-screen','quiz-screen'].forEach(id => document.getElementById(id).classList.add('hidden')); }
 
-function playSound(freq, type, duration) {
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-    gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-    gain.connect(audioCtx.destination);
-    osc.connect(gain);
-    osc.start();
-    osc.stop(audioCtx.currentTime + duration);
+// Logic: Create Team
+function createTeam() {
+    const tName = document.getElementById('team-name').value;
+    if(!tName) return;
+    roomCode = Math.floor(1000 + Math.random() * 9000).toString();
+    isHost = true;
+    playerName = "CREATOR";
+    db.ref('rooms/' + roomCode).set({ teamName: tName, status: 'lobby', currentQ: 0 });
+    initSync();
 }
 
-function startQuiz() {
-    playSound(400, 'square', 0.1);
-    setTimeout(() => playSound(600, 'square', 0.2), 100);
-    
-    document.getElementById("mainTitle").innerText = "[ SYSTEM_RUNNING ]";
-    document.getElementById("pContainer").style.display = "block";
-    document.getElementById("statsRow").style.display = "flex";
-    loadQ();
+// Logic: Join Team
+function joinTeam() {
+    roomCode = document.getElementById('join-code').value;
+    playerName = document.getElementById('p-name').value;
+    if(!roomCode || !playerName) return;
+    db.ref(`rooms/${roomCode}/players/${playerName}`).set({ points: 0 });
+    initSync();
 }
 
-function loadQ(){
-    clearInterval(timer);
-    time=30; answered=false;
-    document.getElementById("timer").innerText=time+"s";
-    document.getElementById("timer").classList.remove("warning");
-    document.getElementById("qNum").innerText=current+1;
-    document.getElementById("pBar").style.width = ((current)/20)*100 + "%";
-
-    let q=questions[current];
-    let html=`<div style="width:100%"><p style="color:var(--terminal-green); margin-bottom:20px">${q.q}</p>`;
-    q.o.forEach((opt,i)=>{
-        html+=`<div class='option' id='opt${i}' onclick='check(${i})'>> ${opt}</div>`;
-    });
-    html += `</div>`;
-    document.getElementById("quiz").innerHTML=html;
-
-    timer=setInterval(()=>{
-        time--;
-        document.getElementById("timer").innerText=time+"s";
-        if(time < 10) {
-            document.getElementById("timer").classList.add("warning");
-            playSound(200, 'sine', 0.05);
+// Real-time Sync Engine
+function initSync() {
+    db.ref('rooms/' + roomCode).on('value', (snap) => {
+        const data = snap.val();
+        if(!data) return;
+        
+        if(data.status === 'lobby') {
+            hide(); document.getElementById('lobby-screen').classList.remove('hidden');
+            document.getElementById('team-display').innerText = `TEAM: ${data.teamName}`;
+            document.getElementById('code-display').innerText = roomCode;
+            let list = "<strong>PLAYERS READY:</strong>";
+            for(let p in data.players) { list += `<div>> ${p}</div>`; }
+            document.getElementById('player-list').innerHTML = list;
+            if(isHost) document.getElementById('start-btn').classList.remove('hidden');
         }
-        if(time == 0) next();
-    }, 1000);
+
+        if(data.status === 'playing') {
+            hide(); document.getElementById('quiz-screen').classList.remove('hidden');
+            const q = questions[data.currentQ];
+            document.getElementById('q-text').innerText = `NODE_${data.currentQ + 1}: ${q.q}`;
+            let opts = "";
+            q.o.forEach((o, i) => { opts += `<button class="btn" onclick="checkAns(${i}, ${data.currentQ})">${o}</button>`; });
+            document.getElementById('options').innerHTML = opts;
+            
+            let scores = "<strong>LIVE POINTS:</strong>";
+            for(let p in data.players) { scores += `<div class="score-row"><span>${p}</span><span>${data.players[p].points}</span></div>`; }
+            document.getElementById('leaderboard').innerHTML = scores;
+        }
+    });
 }
 
-function check(i){
-    if(answered) return;
-    answered = true;
-    clearInterval(timer);
-    
-    let isCorrect = i == questions[current].a;
-    if(isCorrect) {
-        score++;
-        playSound(800, 'sine', 0.1);
-    } else {
-        playSound(150, 'sawtooth', 0.3);
+function startQuiz() { db.ref('rooms/' + roomCode).update({ status: 'playing' }); }
+
+function checkAns(idx, qIdx) {
+    if(idx === questions[qIdx].a) {
+        // Correct answer! Update points in Firebase
+        db.ref(`rooms/${roomCode}/players/${playerName}/points`).transaction(p => (p || 0) + 10);
+        // Advance question for the whole room
+        if(qIdx + 1 < questions.length) {
+            db.ref('rooms/' + roomCode).update({ currentQ: qIdx + 1 });
+        } else {
+            alert("QUIZ COMPLETE!");
+            location.reload();
+        }
     }
-    
-    document.getElementById("opt"+i).classList.add(isCorrect?"correct":"incorrect");
-    document.getElementById("opt"+questions[current].a).classList.add("correct");
-    
-    setTimeout(next, 1200);
-}
-
-function next(){
-    current++;
-    if(current < questions.length) loadQ();
-    else finish();
-}
-
-function finish(){
-    document.getElementById("mainTitle").innerText = "[ UPLOAD_COMPLETE ]";
-    document.getElementById("pBar").style.width = "100%";
-    document.getElementById("quiz").innerHTML= `
-        <div style="text-align:center">
-            <h1 style="font-size:4em; color:var(--neon-blue)">${score}/20</h1>
-            <p>DATA RECOVERY SUCCESSFUL</p>
-            <button class="btn" style="margin-top:20px" onclick="location.reload()">Re-Boot</button>
-        </div>`;
 }
 </script>
 </body>
