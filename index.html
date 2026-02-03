@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber-System Terminal Quiz</title>
+
+    <style>
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-pink: #ff00ff;
+            --terminal-green: #00ff41;
+            --bg-dark: #05080a;
+            --glass: rgba(0, 243, 255, 0.05);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: var(--bg-dark);
+            /* Tech Circuit Background */
+            background-image: linear-gradient(rgba(5, 8, 10, 0.85), rgba(5, 8, 10, 0.85)), 
+                              url('https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1920&q=80');
+            background-size: cover;
+            background-attachment: fixed;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+        }
+
+        /* Scanline Overlay */
+        body::after {
+            content: " ";
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            z-index: 100;
+            background-size: 100% 3px, 3px 100%;
+            pointer-events: none;
+        }
+
+        .container {
+            width: 95%;
+            max-width: 800px;
+            background: rgba(10, 15, 20, 0.9);
+            border: 2px solid var(--neon-blue);
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.2);
+            border-radius: 5px;
+            position: relative;
+            z-index: 10;
+            padding: 2px;
+        }
+
+        .header {
+            padding: 25px;
+            border-bottom: 1px solid rgba(0, 243, 255, 0.3);
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 1.8em;
+            letter-spacing: 4px;
+            color: var(--neon-blue);
+            text-shadow: 0 0 10px var(--neon-blue);
+            margin-bottom: 15px;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 4px;
+            background: #111;
+            margin-bottom: 15px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--neon-blue);
+            width: 0%;
+            transition: width 0.4s ease;
+            box-shadow: 0 0 15px var(--neon-blue);
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9em;
+            color: var(--terminal-green);
+        }
+
+        .timer {
+            font-size: 1.5em;
+            font-weight: bold;
+            min-width: 80px;
+        }
+
+        .warning { color: var(--neon-pink); text-shadow: 0 0 10px var(--neon-pink); }
+
+        .content { padding: 40px; min-height: 350px; }
+
+        .question-text {
+            font-size: 1.3em;
+            margin-bottom: 25px;
+            color: #fff;
+            border-left: 4px solid var(--neon-blue);
+            padding-left: 15px;
+        }
+
+        .option {
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            padding: 15px 20px;
+            margin: 12px 0;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: rgba(255, 255, 255, 0.03);
+            display: flex;
+            align-items: center;
+        }
+
+        .option:hover {
+            background: rgba(0, 243, 255, 0.1);
+            border-color: var(--neon-blue);
+            transform: translateX(5px);
+        }
+
+        .correct { 
+            background: rgba(0, 255, 65, 0.15) !important; 
+            border-color: var(--terminal-green) !important;
+            color: var(--terminal-green);
+        }
+
+        .incorrect { 
+            background: rgba(255, 0, 255, 0.15) !important; 
+            border-color: var(--neon-pink) !important;
+            animation: glitch 0.3s;
+        }
+
+        @keyframes glitch {
+            0% { transform: translate(2px, 2px); }
+            25% { transform: translate(-2px, -2px); }
+            50% { transform: translate(-2px, 2px); }
+            75% { transform: translate(2px, -2px); }
+            100% { transform: translate(0); }
+        }
+
+        .footer { padding: 20px; text-align: center; border-top: 1px solid rgba(0, 243, 255, 0.1); }
+
+        .btn {
+            background: transparent;
+            color: var(--neon-blue);
+            border: 1px solid var(--neon-blue);
+            padding: 12px 30px;
+            cursor: pointer;
+            font-family: inherit;
+            letter-spacing: 2px;
+            transition: 0.3s;
+        }
+
+        .btn:hover {
+            background: var(--neon-blue);
+            color: #000;
+            box-shadow: 0 0 20px var(--neon-blue);
+        }
+
+        .result-screen { text-align: center; padding: 20px; }
+        .score-big { font-size: 4em; color: var(--neon-blue); margin: 20px 0; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>[ SYSTEM_QUIZ_v2.0 ]</h1>
+        <div class="progress-container"><div class="progress-bar" id="pBar"></div></div>
+        <div class="stats-row">
+            <span>STATUS: LINK_ESTABLISHED</span>
+            <div id="timer" class="timer">30s</div>
+            <span>NODE: <span id="qNum">1</span>/20</span>
+        </div>
+    </div>
+
+    <div class="content" id="quiz">
+        </div>
+
+    <div class="footer">
+        <button class="btn" onclick="submitQuiz()">ABORT_SEQUENCE</button>
+    </div>
+</div>
+
+<script>
+const questions=[
+    {q:"> Which part of the computer is called the brain?", o:["RAM","CPU","Monitor","Hard Disk"], a:1},
+    {q:"> Which memory is volatile (loses data without power)?", o:["ROM","RAM","SSD","DVD"], a:1},
+    {q:"> What does HTTP stand for in networking?", o:["Hyper Text Transfer Protocol","High Text Transfer Protocol","Hyper Tool Transfer Protocol","None"], a:0},
+    {q:"> Which device converts digital signals to analog?", o:["Router","Modem","Hub","Switch"], a:1},
+    {q:"> Identify the primary input device:", o:["Printer","Speaker","Keyboard","Monitor"], a:2},
+    {q:"> Shortcut key used to copy selected items?", o:["Ctrl+X","Ctrl+V","Ctrl+C","Ctrl+Z"], a:2},
+    {q:"> Which of the following is system software?", o:["Excel","Windows","Photoshop","Chrome"], a:1},
+    {q:"> Computers operate on which number system?", o:["Decimal","Binary","Octal","Hexa"], a:1},
+    {q:"> Which is the fastest storage device listed?", o:["HDD","SSD","CD","Floppy"], a:1},
+    {q:"> What is the full form of CPU?", o:["Central Program Unit","Central Processing Unit","Computer Processing Unit","None"], a:1},
+    {q:"> Function key to refresh a web page?", o:["F2","F5","F1","F12"], a:1},
+    {q:"> Which is NOT an Operating System?", o:["Linux","Windows","Oracle","MacOS"], a:2},
+    {q:"> What is the full form of URL?", o:["Uniform Resource Locator","Universal Resource Locator","Unified Link","None"], a:0},
+    {q:"> Which hardware connects computers in a local network?", o:["Scanner","Switch","Printer","Plotter"], a:1},
+    {q:"> Identify an example of cloud storage:", o:["Hard Disk","DVD","Google Drive","Pen Drive"], a:2},
+    {q:"> What does USB stand for?", o:["Universal Serial Bus","Unique Serial Bus","Unified Bus","None"], a:0},
+    {q:"> Which software is used for spreadsheets?", o:["Word","Excel","PowerPoint","Paint"], a:1},
+    {q:"> Software that manages hardware and other software?", o:["Utility","Application","System","Programming"], a:2},
+    {q:"> Network topology with a central hub?", o:["Ring","Bus","Star","Mesh"], a:2},
+    {q:"> Software designed to protect against malware?", o:["Firewall","Antivirus","Router","Modem"], a:1}
+];
+
+let current=0, score=0, time=30, timer, answered=false;
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+// Function to generate high-tech sounds
+function playSound(freq, type, duration) {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+}
+
+function loadQ(){
+    clearInterval(timer);
+    time=30; answered=false;
+    document.getElementById("timer").innerText=time+"s";
+    document.getElementById("timer").classList.remove("warning");
+    document.getElementById("qNum").innerText=current+1;
+    document.getElementById("pBar").style.width = ((current)/20)*100 + "%";
+
+    let q=questions[current];
+    let html=`<div class='question-text'>${q.q}</div>`;
+    q.o.forEach((opt,i)=>{
+        html+=`<div class='option' id='opt${i}' onclick='check(${i})'>[NODE_0${i}] ${opt}</div>`;
+    });
+    document.getElementById("quiz").innerHTML=html;
+
+    timer=setInterval(()=>{
+        time--;
+        document.getElementById("timer").innerText=time+"s";
+        if(time < 10) {
+            document.getElementById("timer").classList.add("warning");
+            playSound(150, 'sine', 0.05); // Warning tick
+        }
+        if(time == 0) next();
+    }, 1000);
+}
+
+function check(i){
+    if(answered) return;
+    answered = true;
+    clearInterval(timer);
+    
+    let isCorrect = i == questions[current].a;
+    if(isCorrect) {
+        score++;
+        playSound(600, 'sine', 0.1); // Correct sound
+        setTimeout(() => playSound(900, 'sine', 0.2), 50);
+    } else {
+        playSound(100, 'sawtooth', 0.3); // Error sound
+    }
+    
+    document.getElementById("opt"+i).classList.add(isCorrect?"correct":"incorrect");
+    document.getElementById("opt"+questions[current].a).classList.add("correct");
+    
+    setTimeout(next, 1500);
+}
+
+function next(){
+    current++;
+    if(current < questions.length) loadQ();
+    else submitQuiz();
+}
+
+function submitQuiz(){
+    clearInterval(timer);
+    document.getElementById("pBar").style.width = "100%";
+    let rank = score >= 15 ? "CORE_ARCHITECT" : score >= 10 ? "SYSTEM_ADMIN" : "GUEST_USER";
+    document.getElementById("quiz").innerHTML=
+    `<div class="result-screen">
+        <p>UPLOAD COMPLETE. ANALYSIS REVEALS:</p>
+        <div class='score-big'>${score}/20</div>
+        <h2 style='color:var(--terminal-green)'>RANK: ${rank}</h2>
+        <button class="btn" style="margin-top:30px" onclick="location.reload()">RE-INITIALIZE SYSTEM</button>
+    </div>`;
+}
+
+// Start Quiz
+loadQ();
+</script>
+</body>
+</html>
