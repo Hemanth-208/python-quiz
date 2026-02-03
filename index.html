@@ -85,35 +85,51 @@ function hide() { ['start-menu','create-screen','join-screen','lobby-screen','qu
 // Logic: Create Team
 function createTeam() {
     const tName = document.getElementById('team-name').value;
-    if(!tName) return;
+    if(!tName) { alert("Please enter a team name!"); return; }
     roomCode = Math.floor(1000 + Math.random() * 9000).toString();
     isHost = true;
     playerName = "CREATOR";
-    db.ref('rooms/' + roomCode).set({ teamName: tName, status: 'lobby', currentQ: 0 });
-    initSync();
+    db.ref('rooms/' + roomCode).set({ teamName: tName, status: 'lobby', currentQ: 0, players: { "CREATOR": { points: 0 } } })
+        .then(() => { console.log("Team created:", roomCode); initSync(); })
+        .catch(err => { alert("Error creating team: " + err.message); console.error(err); });
 }
 
 // Logic: Join Team
 function joinTeam() {
     roomCode = document.getElementById('join-code').value;
     playerName = document.getElementById('p-name').value;
-    if(!roomCode || !playerName) return;
-    db.ref(`rooms/${roomCode}/players/${playerName}`).set({ points: 0 });
-    initSync();
+    if(!roomCode || !playerName) { alert("Please enter code and name!"); return; }
+    
+    // First check if the room exists
+    db.ref('rooms/' + roomCode).once('value')
+        .then(snap => {
+            if(!snap.exists()) { 
+                alert("Team code not found! Ask creator for correct code."); 
+                return; 
+            }
+            // Room exists, now add player
+            db.ref(`rooms/${roomCode}/players/${playerName}`).set({ points: 0 })
+                .then(() => { console.log("Joined team:", roomCode); initSync(); })
+                .catch(err => { alert("Error joining team: " + err.message); console.error(err); });
+        })
+        .catch(err => { alert("Connection error: " + err.message); console.error(err); });
 }
 
 // Real-time Sync Engine
 function initSync() {
     db.ref('rooms/' + roomCode).on('value', (snap) => {
         const data = snap.val();
-        if(!data) return;
+        if(!data) { console.log("No room data found"); return; }
+        console.log("Room data:", data);
         
         if(data.status === 'lobby') {
             hide(); document.getElementById('lobby-screen').classList.remove('hidden');
             document.getElementById('team-display').innerText = `TEAM: ${data.teamName}`;
             document.getElementById('code-display').innerText = roomCode;
             let list = "<strong>PLAYERS READY:</strong>";
-            for(let p in data.players) { list += `<div>> ${p}</div>`; }
+            if(data.players) {
+                for(let p in data.players) { list += `<div>> ${p}</div>`; }
+            }
             document.getElementById('player-list').innerHTML = list;
             if(isHost) document.getElementById('start-btn').classList.remove('hidden');
         }
@@ -127,10 +143,12 @@ function initSync() {
             document.getElementById('options').innerHTML = opts;
             
             let scores = "<strong>LIVE POINTS:</strong>";
-            for(let p in data.players) { scores += `<div class="score-row"><span>${p}</span><span>${data.players[p].points}</span></div>`; }
+            if(data.players) {
+                for(let p in data.players) { scores += `<div class="score-row"><span>${p}</span><span>${data.players[p].points}</span></div>`; }
+            }
             document.getElementById('leaderboard').innerHTML = scores;
         }
-    });
+    }, err => { console.error("Database error:", err); alert("Database connection error!"); });
 }
 
 function startQuiz() { db.ref('rooms/' + roomCode).update({ status: 'playing' }); }
