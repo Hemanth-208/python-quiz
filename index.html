@@ -101,19 +101,33 @@ function joinTeam() {
     playerName = document.getElementById('p-name').value;
     if(!roomCode || !playerName) { alert("Please enter code and name!"); return; }
     
+    console.log("Attempting to join room:", roomCode, "as:", playerName);
+    
     // First check if the room exists
     db.ref('rooms/' + roomCode).once('value')
         .then(snap => {
+            console.log("Room check result:", snap.exists(), snap.val());
             if(!snap.exists()) { 
                 alert("Team code not found! Ask creator for correct code."); 
                 return; 
             }
             // Room exists, now add player
-            db.ref(`rooms/${roomCode}/players/${playerName}`).set({ points: 0 })
-                .then(() => { console.log("Joined team:", roomCode); initSync(); })
-                .catch(err => { alert("Error joining team: " + err.message); console.error(err); });
+            const playerRef = db.ref(`rooms/${roomCode}/players/${playerName}`);
+            playerRef.set({ points: 0 })
+                .then(() => { 
+                    console.log("Player added successfully:", playerName);
+                    alert("Joined team! Waiting for quiz to start...");
+                    initSync(); 
+                })
+                .catch(err => { 
+                    console.error("Error joining:", err);
+                    alert("Error joining team: " + err.message); 
+                });
         })
-        .catch(err => { alert("Connection error: " + err.message); console.error(err); });
+        .catch(err => { 
+            console.error("Connection error:", err);
+            alert("Connection error: " + err.message); 
+        });
 }
 
 // Real-time Sync Engine
@@ -162,16 +176,23 @@ function initSync() {
 function startQuiz() { db.ref('rooms/' + roomCode).update({ status: 'playing' }); }
 
 function checkAns(idx, qIdx) {
+    console.log("Answer selected:", idx, "Correct:", questions[qIdx].a);
     if(idx === questions[qIdx].a) {
+        alert("✓ CORRECT! +10 points");
         // Correct answer! Update points in Firebase
-        db.ref(`rooms/${roomCode}/players/${playerName}/points`).transaction(p => (p || 0) + 10);
-        // Advance question for the whole room
-        if(qIdx + 1 < questions.length) {
-            db.ref('rooms/' + roomCode).update({ currentQ: qIdx + 1 });
-        } else {
-            alert("QUIZ COMPLETE!");
-            location.reload();
-        }
+        db.ref(`rooms/${roomCode}/players/${playerName}/points`).transaction(p => (p || 0) + 10)
+            .then(() => {
+                // Advance question for the whole room
+                if(qIdx + 1 < questions.length) {
+                    db.ref('rooms/' + roomCode).update({ currentQ: qIdx + 1 });
+                } else {
+                    alert("QUIZ COMPLETE!");
+                    location.reload();
+                }
+            });
+    } else {
+        alert("✗ WRONG! Try the next one.");
+        console.log("Wrong answer");
     }
 }
 </script>
