@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CyberTeam | Flashy Finale</title>
+    <title>CyberSprint | Elite Edition</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
     <style>
         :root {
             --primary: #00f3ff; --secondary: #7000ff; --success: #00ff41;
@@ -14,128 +15,141 @@
             --gold: #ffd700; --silver: #e0e0e0; --bronze: #cd7f32;
         }
 
-        * { box-sizing: border-box; transition: all 0.3s ease; cursor: default; }
+        * { box-sizing: border-box; transition: all 0.2s ease; cursor: none !important; }
+        
         body {
             margin: 0; background: var(--bg-dark); color: #fff;
             font-family: 'Segoe UI', system-ui, sans-serif;
             display: flex; justify-content: center; align-items: center; min-height: 100vh;
             background-image: radial-gradient(circle at center, #1a1b26 0%, #000 100%);
+            overflow: hidden;
         }
 
+        /* --- PENCIL CURSOR & TRAIL --- */
+        #pencil-cursor {
+            position: fixed; pointer-events: none; z-index: 10000;
+            width: 35px; height: 35px; transform: translate(-2px, -30px);
+            transition: transform 0.05s linear;
+        }
+        .pencil-svg { fill: var(--primary); filter: drop-shadow(0 0 8px var(--primary)); transform: rotate(-15deg); }
+        .pencil-pressing { transform: translate(-2px, -30px) scale(0.8) !important; }
+        
+        .trail-dot {
+            position: fixed; width: 4px; height: 4px; background: var(--primary);
+            border-radius: 50%; pointer-events: none; z-index: 9999;
+            box-shadow: 0 0 10px var(--primary); animation: fadeOut 0.8s forwards;
+        }
+        @keyframes fadeOut { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(0.2); } }
+
+        /* --- UI COMPONENTS --- */
         .glass-panel {
             width: 90%; max-width: 500px; background: rgba(15, 15, 20, 0.95);
             backdrop-filter: blur(30px); border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 30px; padding: 40px; box-shadow: 0 0 50px rgba(0,0,0,1);
-            position: relative; overflow: hidden;
+            position: relative;
         }
 
-        /* Flashy Podium */
-        .podium-container {
-            display: flex; align-items: flex-end; justify-content: center;
-            gap: 15px; margin: 50px 0 30px 0; height: 180px;
+        #master-fill { 
+            position: absolute; top: 0; left: 0; height: 5px; 
+            background: var(--primary); width: 0%; transition: width 0.5s ease; 
+            box-shadow: 0 0 15px var(--primary); border-radius: 30px 30px 0 0;
         }
 
-        .podium-step {
-            width: 100px; border-radius: 15px 15px 5px 5px;
-            display: flex; flex-direction: column; align-items: center;
-            justify-content: flex-end; padding-bottom: 15px;
-            position: relative; animation: slideUp 0.8s cubic-bezier(0.17, 0.67, 0.83, 0.67);
-        }
-
-        @keyframes slideUp { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
-        .rank-1 { 
-            height: 100%; background: linear-gradient(180deg, var(--gold), #b8860b); 
-            box-shadow: 0 0 30px rgba(255, 215, 0, 0.6); order: 2; z-index: 3;
-            animation: pulse-gold 2s infinite linear;
-        }
-        .rank-2 { 
-            height: 70%; background: linear-gradient(180deg, var(--silver), #707070); 
-            box-shadow: 0 0 20px rgba(192, 192, 192, 0.4); order: 1; 
-        }
-        .rank-3 { 
-            height: 50%; background: linear-gradient(180deg, var(--bronze), #804a00); 
-            box-shadow: 0 0 20px rgba(205, 127, 50, 0.4); order: 3; 
-        }
-
-        @keyframes pulse-gold { 
-            0%, 100% { transform: scale(1); box-shadow: 0 0 30px rgba(255, 215, 0, 0.6); }
-            50% { transform: scale(1.05); box-shadow: 0 0 50px rgba(255, 215, 0, 0.8); }
-        }
-
-        .podium-emoji { font-size: 2.5rem; position: absolute; top: -45px; }
-        .podium-name { font-weight: 800; color: #000; font-size: 0.85rem; width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; }
-
-        /* General Styles */
         h2 { text-align: center; letter-spacing: 5px; font-weight: 200; text-transform: uppercase; margin-bottom: 30px; }
-        .btn {
-            width: 100%; padding: 18px; border-radius: 15px; border: none; font-weight: 800;
-            cursor: pointer; text-transform: uppercase; margin-top: 15px;
-            background: #fff; color: #000;
-        }
-        .btn-primary { background: linear-gradient(45deg, var(--secondary), var(--primary)); color: #fff; }
         
-        .opt-btn {
-            width: 100%; padding: 20px; margin-bottom: 12px; border-radius: 16px;
-            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-            color: #ccc; cursor: pointer; text-align: left; font-size: 1rem;
+        .btn, .opt-btn {
+            width: 100%; padding: 18px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1);
+            font-weight: 800; text-transform: uppercase; margin-top: 15px;
+            background: rgba(255,255,255,0.05); color: #fff;
         }
-        .opt-btn:hover { background: rgba(255,255,255,0.1); border-color: var(--primary); color: #fff; }
+        .btn-primary { background: linear-gradient(45deg, var(--secondary), var(--primary)); border: none; }
+        .opt-btn:hover { border-color: var(--primary); background: rgba(0, 243, 255, 0.1); box-shadow: 0 0 20px rgba(0, 243, 255, 0.2); }
+
+        input {
+            width: 100%; padding: 15px; background: #111; border: 1px solid #333; 
+            color: #fff; border-radius: 12px; outline: none; margin-bottom: 10px;
+        }
+
+        /* --- PODIUM --- */
+        .podium-container { display: flex; align-items: flex-end; justify-content: center; gap: 15px; margin: 50px 0 30px 0; height: 160px; }
+        .podium-step { 
+            width: 100px; border-radius: 15px 15px 5px 5px; display: flex; 
+            flex-direction: column; align-items: center; justify-content: flex-end; 
+            padding-bottom: 15px; position: relative; animation: slideUp 0.8s ease-out;
+        }
+        @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        
+        .rank-1 { height: 100%; background: linear-gradient(180deg, var(--gold), #b8860b); box-shadow: 0 0 30px rgba(255, 215, 0, 0.5); order: 2; animation: pulse-gold 2s infinite linear; }
+        .rank-2 { height: 75%; background: linear-gradient(180deg, var(--silver), #707070); order: 1; }
+        .rank-3 { height: 55%; background: linear-gradient(180deg, var(--bronze), #804a00); order: 3; }
+        
+        @keyframes pulse-gold { 50% { transform: scale(1.05); box-shadow: 0 0 50px rgba(255, 215, 0, 0.7); } }
+        .podium-emoji { font-size: 2.2rem; position: absolute; top: -40px; }
+        .podium-name { font-weight: 900; color: #000; font-size: 0.75rem; text-align: center; width: 90%; overflow: hidden; }
+
+        /* --- STATUS TAGS --- */
+        .status-tag { font-size: 0.6rem; padding: 2px 5px; border-radius: 4px; margin-left: 5px; text-transform: uppercase; }
+        .status-active { color: var(--primary); animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0.2; } }
 
         .hidden { display: none; }
-        #master-fill { position: absolute; top: 0; left: 0; height: 5px; background: var(--primary); width: 0%; transition: width 0.5s ease; box-shadow: 0 0 15px var(--primary); }
     </style>
 </head>
 <body>
+
+<div id="pencil-cursor">
+    <svg class="pencil-svg" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+</div>
 
 <div class="glass-panel">
     <div id="master-fill"></div>
 
     <div id="sc-home">
         <h2>CYBER<span style="color:var(--primary); font-weight:900;">SPRINT</span></h2>
-        <button class="btn btn-primary" onclick="nav('sc-create')">Create Mission</button>
-        <button class="btn" onclick="nav('sc-join')" style="background:transparent; color:#fff; border:1px solid #333;">Join Network</button>
+        <button class="btn btn-primary" onclick="nav('sc-create')">Host Session</button>
+        <button class="btn" onclick="nav('sc-join')">Join Mission</button>
     </div>
 
     <div id="sc-create" class="hidden">
-        <h2>HOST</h2>
-        <input type="text" id="c-name" style="width:100%; padding:15px; background:#111; border:1px solid #333; color:#fff; border-radius:12px;" placeholder="Username">
-        <button class="btn btn-primary" onclick="createRoom()">Generate Link</button>
+        <h2>IDENTIFY</h2>
+        <input type="text" id="c-name" placeholder="Agent Name">
+        <button class="btn btn-primary" onclick="createRoom()">Generate Sync Code</button>
     </div>
 
     <div id="sc-join" class="hidden">
-        <h2>SYNC</h2>
-        <input type="text" id="room-id" style="width:100%; padding:15px; background:#111; border:1px solid #333; color:#fff; border-radius:12px; margin-bottom:10px;" placeholder="Room ID">
-        <input type="text" id="p-name" style="width:100%; padding:15px; background:#111; border:1px solid #333; color:#fff; border-radius:12px;" placeholder="Player Name">
-        <button class="btn btn-primary" onclick="joinRoom()">Connect</button>
+        <h2>CONNECT</h2>
+        <input type="text" id="room-id" placeholder="Room ID">
+        <input type="text" id="p-name" placeholder="Player Alias">
+        <button class="btn btn-primary" onclick="joinRoom()">Synchronize</button>
     </div>
 
     <div id="sc-lobby" class="hidden">
         <div id="l-code" style="text-align: center; font-size: 4rem; font-weight: 900; color: var(--primary);">0000</div>
-        <div id="p-list" style="margin:30px 0; max-height: 150px; overflow-y: auto; font-size: 0.9rem; opacity: 0.7;"></div>
-        <button id="start-btn" class="btn btn-primary hidden" onclick="startQuiz()">Launch Mission</button>
+        <div id="p-list" style="margin:20px 0; max-height: 150px; overflow-y: auto; opacity: 0.6;"></div>
+        <button id="start-btn" class="btn btn-primary hidden" onclick="startQuiz()">Initiate Hack</button>
     </div>
 
     <div id="sc-quiz" class="hidden">
-        <div id="q-txt" style="font-size: 1.4rem; text-align: center; margin-bottom: 30px; font-weight: 600;"></div>
+        <div id="q-txt" style="font-size: 1.3rem; text-align: center; margin-bottom: 25px; font-weight: 600;"></div>
         <div id="opt-zone"></div>
-        <div id="l-board" style="margin-top:20px; font-size:0.8rem; opacity:0.6;"></div>
+        <div id="l-board" style="margin-top:20px; font-size:0.8rem; border-top:1px solid rgba(255,255,255,0.1); padding-top:10px;"></div>
     </div>
 
     <div id="sc-dq" class="hidden" style="text-align:center;">
-        <h1 style="color:var(--danger); font-size:3rem;">TERMINATED</h1>
-        <p>SECURITY BREACH: TAB CHANGE</p>
+        <h1 style="color:var(--danger); font-size:3rem;">VOID</h1>
+        <p>TAB SWITCH DETECTED. CONNECTION CUT.</p>
     </div>
 
     <div id="sc-res" class="hidden">
-        <h2 style="letter-spacing: 2px;">MISSION COMPLETED</h2>
+        <h2>RESULTS</h2>
         <div id="podium-zone" class="podium-container"></div>
-        <div id="f-stats" style="background:rgba(255,255,255,0.03); padding:15px; border-radius:15px;"></div>
-        <button class="btn btn-primary" onclick="location.reload()">Return to Base</button>
+        <div id="f-stats"></div>
+        <button class="btn btn-primary" onclick="location.reload()">Reset System</button>
     </div>
 </div>
 
 <script>
+// --- CONFIG & DATA ---
 const audio = {
     correct: new Audio('https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3'),
     wrong: new Audio('https://assets.mixkit.co/active_storage/sfx/2658/2658-preview.mp3'),
@@ -143,18 +157,18 @@ const audio = {
 };
 
 const firebaseConfig = {
-  apiKey: "AIzaSyB-EQmy86TNealf_VZB32H3p-bWSyDNE9k",
-  authDomain: "cyberquizsync.firebaseapp.com",
-  projectId: "cyberquizsync",
-  storageBucket: "cyberquizsync.firebasestorage.app",
-  messagingSenderId: "241572824298",
-  appId: "1:241572824298:web:8941756bda23f03af8c393",
-  measurementId: "G-WRS1YXN3T2"
+    apiKey: "AIzaSyB-EQmy86TNealf_VZB32H3p-bWSyDNE9k",
+    authDomain: "cyberquizsync.firebaseapp.com",
+    databaseURL: "https://cyberquizsync-default-rtdb.firebaseio.com",
+    projectId: "cyberquizsync",
+    storageBucket: "cyberquizsync.firebasestorage.app",
+    messagingSenderId: "241572824298",
+    appId: "1:241572824298:web:8941756bda23f03af8c393"
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-let rCode = "", myN = "", isH = false, qIdx = -1, isDQed = false, tRef;
+let rCode = "", myN = "", isH = false, qIdx = -1, isDQed = false;
 
 const questions = [
     {q: "Which component is the brain of the computer?", o: ["RAM", "Hard Disk", "CPU", "Monitor"], a: 2},
@@ -179,16 +193,31 @@ const questions = [
     {q: "Example of cloud storage?", o: ["Pen Drive", "Google Drive", "DVD", "Hard Disk"], a: 1}
 ];
 
+// --- PENCIL LOGIC ---
+const pencil = document.getElementById('pencil-cursor');
+document.addEventListener('mousemove', (e) => {
+    pencil.style.left = e.clientX + 'px';
+    pencil.style.top = e.clientY + 'px';
+    const dot = document.createElement('div');
+    dot.className = 'trail-dot';
+    dot.style.left = e.clientX + 'px';
+    dot.style.top = e.clientY + 'px';
+    document.body.appendChild(dot);
+    setTimeout(() => dot.remove(), 800);
+});
+document.addEventListener('mousedown', () => pencil.classList.add('pencil-pressing'));
+document.addEventListener('mouseup', () => pencil.classList.remove('pencil-pressing'));
+
+// --- CORE LOGIC ---
 function nav(id) { 
-    ['sc-home','sc-create','sc-join','sc-lobby','sc-quiz','sc-dq', 'sc-res'].forEach(s => document.getElementById(s).classList.add('hidden'));
+    ['sc-home','sc-create','sc-join','sc-lobby','sc-quiz','sc-dq','sc-res'].forEach(s => document.getElementById(s).classList.add('hidden'));
     document.getElementById(id).classList.remove('hidden');
 }
 
 window.addEventListener('blur', () => { if(!isH && !isDQed && rCode) triggerDQ(); });
-document.addEventListener('visibilitychange', () => { if(document.hidden && !isH && !isDQed && rCode) triggerDQ(); });
 
 function triggerDQ() {
-    db.ref(`rooms/${rCode}/status`).once('value', (s) => {
+    db.ref(`rooms/${rCode}/status`).once('value', s => {
         if(s.val() === 'playing') {
             isDQed = true; audio.dq.play();
             db.ref(`rooms/${rCode}/players/${myN}`).update({ disqualified: true });
@@ -206,12 +235,20 @@ function createRoom() {
     initSync();
 }
 
-function joinRoom() {
+async function joinRoom() {
     rCode = document.getElementById('room-id').value.trim();
     myN = document.getElementById('p-name').value.trim();
-    if(!rCode || !myN) return;
-    db.ref(`rooms/${rCode}/players/${myN}`).set({ points: 0, currentQ: 0, done: false, disqualified: false });
-    initSync();
+    const input = document.getElementById('room-id');
+    const snap = await db.ref('rooms/' + rCode).once('value');
+    if (snap.exists()) {
+        db.ref(`rooms/${rCode}/players/${myN}`).set({ points: 0, currentQ: 0, done: false, disqualified: false, typing: false });
+        initSync();
+    } else {
+        audio.wrong.play();
+        input.style.borderColor = "var(--danger)";
+        input.animate([ {transform:'translateX(0)'}, {transform:'translateX(-10px)'}, {transform:'translateX(10px)'}, {transform:'translateX(0)'} ], 300);
+        setTimeout(() => input.style.borderColor = "#333", 2000);
+    }
 }
 
 function initSync() {
@@ -220,53 +257,50 @@ function initSync() {
         if(data.status === 'lobby') {
             nav('sc-lobby');
             document.getElementById('l-code').innerText = rCode;
-            let list = ""; for(let p in data.players) { list += `<div>• ${p}</div>`; }
+            let list = ""; for(let p in data.players) list += `<div>• ${p}</div>`;
             document.getElementById('p-list').innerHTML = list;
             if(isH) document.getElementById('start-btn').classList.remove('hidden');
         }
         if(data.status === 'playing') {
             const pD = data.players ? data.players[myN] : null;
-            if(!isH && isDQed && pD && !pD.disqualified) { isDQed = false; nav('sc-quiz'); }
             if(!isDQed) {
                 nav('sc-quiz');
                 updateBoard(data.players);
                 if(!isH && pD) {
                     document.getElementById('master-fill').style.width = ((pD.currentQ / questions.length) * 100) + "%";
                     if(pD.done) {
-                        document.getElementById('q-txt').innerText = "NODES COMPLETED";
-                        document.getElementById('opt-zone').innerHTML = "<p style='text-align:center; color:var(--success)'>Waiting for others to finish...</p>";
-                    } else { renderQ(pD.currentQ); }
-                } else { document.getElementById('q-txt').innerText = "LIVE SPECTATOR"; }
+                        document.getElementById('q-txt').innerText = "SYSTEM SECURED";
+                        document.getElementById('opt-zone').innerHTML = "<p style='text-align:center; color:var(--primary)'>Awaiting Hack Conclusion...</p>";
+                        db.ref(`rooms/${rCode}/players/${myN}`).update({ typing: false });
+                    } else renderQ(pD.currentQ);
+                }
             }
         }
         if(data.status === 'finished') { 
             nav('sc-res'); 
             updateBoard(data.players, 'f-stats'); 
-            confetti({ particleCount: 250, spread: 100, origin: { y: 0.6 } });
+            confetti({ particleCount: 200, spread: 70, origin: { y: 0.6 } });
         }
     });
 }
 
 function renderQ(idx) {
     if(qIdx === idx) return; qIdx = idx;
+    db.ref(`rooms/${rCode}/players/${myN}`).update({ typing: true });
     const q = questions[idx];
     document.getElementById('q-txt').innerText = q.q;
     let html = "";
-    q.o.forEach((o, i) => { html += `<button class="opt-btn" onclick="sendAns(${i}, ${idx})">${o}</button>`; });
+    q.o.forEach((o, i) => html += `<button class="opt-btn" onclick="sendAns(${i}, ${idx})">${o}</button>`);
     document.getElementById('opt-zone').innerHTML = html;
 }
 
 function sendAns(i, qI) {
+    db.ref(`rooms/${rCode}/players/${myN}`).update({ typing: false });
     if(i === questions[qI].a) {
         audio.correct.play();
         db.ref(`rooms/${rCode}/players/${myN}/points`).transaction(p => (p||0)+2);
-    } else {
-        audio.wrong.play();
-    }
-    moveNext();
-}
-
-function moveNext() {
+    } else audio.wrong.play();
+    
     if(qIdx + 1 < questions.length) db.ref(`rooms/${rCode}/players/${myN}`).update({ currentQ: qIdx + 1 });
     else { db.ref(`rooms/${rCode}/players/${myN}`).update({ done: true }); checkF(); }
 }
@@ -282,7 +316,7 @@ function checkF() {
 function startQuiz() { db.ref('rooms/' + rCode).update({ status: 'playing' }); }
 
 function updateBoard(ps, target = 'l-board') {
-    let s = []; for(let p in ps) { s.push({n:p, pts:ps[p].points, dq:ps[p].disqualified}); }
+    let s = []; for(let p in ps) s.push({n:p, pts:ps[p].points, dq:ps[p].disqualified, typing:ps[p].typing, done:ps[p].done});
     s.sort((a,b) => b.pts - a.pts);
     
     if(target === 'f-stats') {
@@ -293,12 +327,12 @@ function updateBoard(ps, target = 'l-board') {
         document.getElementById('podium-zone').innerHTML = pod;
     }
 
-    let html = `<p style="font-size:0.6rem; letter-spacing:1px; margin-bottom:10px;">STANDINGS</p>`;
+    let html = "";
     s.forEach((x, i) => {
-        let rankTag = i === 0 ? "🏆" : (i === 1 ? "🥈" : (i === 2 ? "🥉" : ""));
-        html += `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.05); ${x.dq?'opacity:0.3;':''}">
-                    <span>${i+1}. ${rankTag} ${x.n}</span>
-                    <span style="color:var(--primary); font-weight:800;">${x.pts} PTS</span>
+        let tag = x.dq ? `<span class="status-tag" style="color:var(--danger)">Offline</span>` : (x.done ? `<span class="status-tag" style="color:var(--success)">Done</span>` : (x.typing ? `<span class="status-tag status-active">...</span>` : ""));
+        html += `<div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.05); ${x.dq?'opacity:0.3':''}">
+                    <span>${i+1}. ${x.n} ${tag}</span>
+                    <span style="color:var(--primary); font-weight:800;">${x.pts}</span>
                  </div>`;
     });
     document.getElementById(target).innerHTML = html;
