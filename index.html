@@ -10,15 +10,13 @@
     
     <style>
         :root {
-            --primary: #00f3ff; --bg: #050508; --card: rgba(22, 24, 33, 0.9);
-            --text: #ffffff; --danger: #ff3131;
+            --primary: #00f3ff; --bg: #0a0b10; --card: #161821;
+            --text: #ffffff; --danger: #ff3131; --success: #00ff41;
         }
 
         * { box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
         
-        /* Desktop Cursor */
         @media (pointer: fine) { * { cursor: none !important; } #pencil-cursor { display: block; } }
-        /* Mobile Cursor */
         @media (pointer: coarse) { * { cursor: auto !important; } #pencil-cursor { display: none !important; } }
 
         body { 
@@ -27,41 +25,48 @@
             overflow: hidden; touch-action: manipulation;
         }
 
-        #bg-canvas { position: fixed; top: 0; left: 0; z-index: -2; opacity: 0.15; }
+        #bg-canvas { position: fixed; top: 0; left: 0; z-index: -2; opacity: 0.2; }
         #pencil-cursor { position: fixed; pointer-events: none; z-index: 10001; width: 35px; height: 35px; transform: translate(-2px, -30px); }
         .pencil-svg { fill: var(--primary); filter: drop-shadow(0 0 5px var(--primary)); }
         .trail-dot { position: fixed; width: 4px; height: 4px; background: var(--primary); border-radius: 50%; pointer-events: none; animation: fade 0.6s forwards; }
         @keyframes fade { from { opacity: 1; } to { opacity: 0; transform: scale(0); } }
 
         .container {
-            width: 90%; max-width: 450px; background: var(--card);
-            padding: 30px; border-radius: 15px; border: 1px solid var(--primary);
-            box-shadow: 0 0 30px rgba(0, 243, 255, 0.1); text-align: center;
-            backdrop-filter: blur(10px); position: relative; z-index: 10;
+            width: 92%; max-width: 450px; background: var(--card);
+            padding: 40px; border-radius: 20px; border: 2px solid #2a2d3e;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5); text-align: center;
+            position: relative; z-index: 10;
         }
 
-        h1 { font-size: 1.8rem; margin-bottom: 5px; color: var(--primary); letter-spacing: 2px; }
-        .tagline { font-size: 0.7rem; color: #888; margin-bottom: 25px; text-transform: uppercase; }
+        h1 { font-size: 2rem; margin-bottom: 10px; color: var(--primary); letter-spacing: 1px; }
+        p.subtitle { color: #8b8eaf; margin-bottom: 30px; font-size: 0.9rem; }
 
         input {
-            width: 100%; padding: 12px; margin-bottom: 12px; border-radius: 8px;
-            border: 1px solid #3f445e; background: rgba(0,0,0,0.5); color: white; outline: none;
+            width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 10px;
+            border: 1px solid #3f445e; background: #0a0b10; color: white; font-size: 1rem; outline: none;
         }
         
         .btn {
-            width: 100%; padding: 14px; border-radius: 8px; border: 1px solid var(--primary);
-            font-size: 0.9rem; font-weight: bold; text-transform: uppercase;
-            transition: 0.3s; margin-top: 10px; background: transparent; color: var(--primary);
+            width: 100%; padding: 16px; border-radius: 10px; border: none;
+            font-size: 1rem; font-weight: bold; text-transform: uppercase;
+            transition: 0.2s; margin-top: 10px; cursor: pointer;
         }
         .btn-main { background: var(--primary); color: #000; }
-        
-        .opt-btn { 
-            width: 100%; padding: 14px; margin-bottom: 10px; border-radius: 8px; 
-            background: rgba(255,255,255,0.05); border: 1px solid #3f445e; color: white; text-align: left; 
-        }
-        .opt-btn:hover { background: rgba(0, 243, 255, 0.1); border-color: var(--primary); }
+        .btn-outline { background: transparent; border: 1px solid #3f445e; color: white; }
+        .btn:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0, 243, 255, 0.3); }
 
-        .board-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.8rem; }
+        .opt-btn { 
+            width: 100%; padding: 15px; margin-bottom: 10px; border-radius: 10px; 
+            background: #232635; border: 1px solid #3f445e; color: white; text-align: left; 
+        }
+        .opt-btn:hover { border-color: var(--primary); background: #2a2d3e; }
+
+        .board-row { 
+            display: flex; justify-content: space-between; padding: 12px 15px; 
+            background: rgba(255,255,255,0.03); margin-bottom: 5px;
+            border-radius: 8px; font-size: 0.9rem; border-left: 3px solid var(--primary);
+        }
+        .dq-row { border-left-color: var(--danger); opacity: 0.5; }
         .hidden { display: none; }
     </style>
 </head>
@@ -73,35 +78,49 @@
 <div class="container">
     <div id="sc-home">
         <h1>HARDWARE QUIZ</h1>
-        <p class="tagline">Anti-Cheat Enabled | Individual Shuffle</p>
-        <button class="btn btn-main" onclick="nav('sc-create')">Host Game</button>
-        <button class="btn" onclick="nav('sc-join')">Join Game</button>
+        <p class="subtitle">Diagnostic System v3.0 | Anti-Cheat Active</p>
+        <button class="btn btn-main" onclick="nav('sc-create')">Host a New Game</button>
+        <button class="btn btn-outline" onclick="nav('sc-join')">Join with a Code</button>
     </div>
 
-    <div id="sc-create" class="hidden"><h1>HOST</h1><input type="text" id="c-name" placeholder="Your Name"><button class="btn btn-main" onclick="createRoom()">Create Room</button></div>
-    <div id="sc-join" class="hidden"><h1>JOIN</h1><input type="text" id="room-id" placeholder="Room Code"><input type="text" id="p-name" placeholder="Nickname"><button class="btn btn-main" onclick="joinRoom()">Connect</button></div>
+    <div id="sc-create" class="hidden">
+        <h1>HOST GAME</h1>
+        <p class="subtitle">Enter your name to start a room.</p>
+        <input type="text" id="c-name" placeholder="Your Name">
+        <button class="btn btn-main" onclick="createRoom()">Create Room</button>
+        <button class="btn btn-outline" onclick="nav('sc-home')">Go Back</button>
+    </div>
+
+    <div id="sc-join" class="hidden">
+        <h1>JOIN GAME</h1>
+        <p class="subtitle">Enter the 4-digit code provided by the host.</p>
+        <input type="text" id="room-id" placeholder="Room Code (e.g. 1234)">
+        <input type="text" id="p-name" placeholder="Your Nickname">
+        <button class="btn btn-main" onclick="joinRoom()">Connect Now</button>
+        <button class="btn btn-outline" onclick="nav('sc-home')">Go Back</button>
+    </div>
 
     <div id="sc-lobby" class="hidden">
-        <p>Room Code:</p>
-        <div id="l-code" style="font-size: 3.5rem; color: var(--primary); font-weight: 800;">0000</div>
-        <div id="p-list" style="margin: 20px 0; text-align: left;"></div>
-        <button id="start-btn" class="btn btn-main hidden" onclick="startQuiz()">Start Quiz</button>
+        <p class="subtitle">Share this code with players:</p>
+        <div id="l-code" style="font-size: 3.5rem; color: var(--primary); font-weight: 800; margin-bottom: 20px;">0000</div>
+        <div id="p-list" style="text-align: left; background: #0a0b10; padding: 15px; border-radius: 10px; min-height: 50px; font-size: 0.9rem;"></div>
+        <button id="start-btn" class="btn btn-main hidden" onclick="startQuiz()" style="margin-top: 20px;">Start the Quiz</button>
     </div>
 
     <div id="sc-quiz" class="hidden">
-        <div id="q-txt" style="font-size: 1rem; font-weight: bold; margin-bottom: 20px; text-align: left;"></div>
+        <div id="q-txt" style="font-size: 1.1rem; font-weight: bold; margin-bottom: 25px; text-align: left;"></div>
         <div id="opt-zone"></div>
-        <div id="l-board" style="margin-top: 25px; text-align: left;"></div>
+        <div id="l-board" style="margin-top: 30px; text-align: left;"></div>
     </div>
 
     <div id="sc-dq" class="hidden">
-        <h1 style="color:var(--danger)">CHEATER DETECTED</h1>
-        <p>System locked. You left the quiz tab.</p>
-        <button class="btn" onclick="location.reload()">Back to Menu</button>
+        <h1 style="color:var(--danger)">SYSTEM LOCK</h1>
+        <p>You have been <b>disqualified</b> for switching tabs or minimizing the browser.</p>
+        <button class="btn btn-outline" onclick="location.reload()">Exit Quiz</button>
     </div>
 
     <div id="sc-res" class="hidden">
-        <h1>FINAL SCORES</h1>
+        <h1>FINAL RANKINGS</h1>
         <div id="f-stats" style="margin: 20px 0;"></div>
         <button class="btn btn-main" onclick="location.reload()">Play Again</button>
     </div>
@@ -115,7 +134,7 @@ window.onresize = resize; resize();
 const chars = "01010101ABCDEFHIJKLMNOPQRSTUVWXYZ"; const fontSize = 14;
 let drops = Array(Math.floor(window.innerWidth / fontSize)).fill(1);
 function drawMatrix() {
-    ctx.fillStyle = "rgba(0, 0, 0, 0.05)"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "rgba(10, 11, 16, 0.1)"; ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = "#00f3ff"; ctx.font = fontSize + "px monospace";
     for (let i = 0; i < drops.length; i++) {
         const text = chars[Math.floor(Math.random() * chars.length)];
@@ -137,7 +156,7 @@ document.addEventListener('mousemove', (e) => {
     }
 });
 
-// --- FIREBASE & QUESTIONS ---
+// --- FIREBASE SETUP ---
 const firebaseConfig = {
     apiKey: "AIzaSyB-EQmy86TNealf_VZB32H3p-bWSyDNE9k",
     authDomain: "cyberquizsync.firebaseapp.com",
@@ -151,34 +170,36 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 const masterQ = [
-    {q: "Brain of the computer?", o: ["RAM", "Hard Disk", "CPU", "Monitor"], a: 2},
-    {q: "Volatile memory?", o: ["ROM", "RAM", "SSD", "HDD"], a: 1},
-    {q: "HTTP full form?", o: ["Hyper Text Transfer Protocol", "High Text Protocol", "Hyper Transfer Process", "Hyper Tool Protocol"], a: 0},
-    {q: "Converts digital to analog?", o: ["Router", "Modem", "Switch", "Hub"], a: 1},
-    {q: "Input device example?", o: ["Printer", "Plotter", "Scanner", "Speaker"], a: 2},
-    {q: "Windows Copy Shortcut?", o: ["Ctrl+V", "Ctrl+C", "Ctrl+X", "Ctrl+Z"], a: 1},
-    {q: "CPU stands for?", o: ["Central Processing Unit", "Computer Processing Unit", "Central Program Unit", "Control Processing Unit"], a: 0},
-    {q: "System software example?", o: ["MS Excel", "Windows OS", "Photoshop", "Chrome"], a: 1},
-    {q: "Internal computer language?", o: ["Decimal", "Octal", "Binary", "Hexadecimal"], a: 2},
-    {q: "Temporary data storage?", o: ["Cache", "ROM", "RAM", "Hard Disk"], a: 2},
-    {q: "Excel file extension?", o: [".docx", ".xlsx", ".pptx", ".txt"], a: 1},
-    {q: "Primary function of OS?", o: ["Compile programs", "Manage hardware", "Create documents", "Browse web"], a: 1},
-    {q: "Refresh webpage key?", o: ["F1", "F2", "F5", "F10"], a: 2},
-    {q: "NOT a programming language?", o: ["Python", "Java", "HTML", "Oracle"], a: 3},
-    {q: "Fastest storage access?", o: ["Hard Disk", "CD-ROM", "SSD", "Floppy"], a: 2},
-    {q: "URL stands for?", o: ["Uniform Resource Locator", "Universal Link", "Unique Location", "Unified Link"], a: 0},
-    {q: "Protects against viruses?", o: ["Firewall", "Antivirus", "Router", "Modem"], a: 1},
-    {q: "Central hub topology?", o: ["Ring", "Bus", "Star", "Mesh"], a: 2},
-    {q: "USB full form?", o: ["Universal System Bus", "Unique Serial Bus", "Universal Serial Bus", "Unified Service Bus"], a: 2},
-    {q: "Cloud storage example?", o: ["Pen Drive", "Google Drive", "DVD", "Hard Disk"], a: 1}
+    {q: "Which component is the brain of the computer?", o: ["RAM", "Hard Disk", "CPU", "Monitor"], a: 2},
+    {q: "Which memory is volatile?", o: ["ROM", "RAM", "SSD", "HDD"], a: 1},
+    {q: "What does HTTP stand for?", o: ["Hyper Text Transfer Protocol", "High Text Protocol", "Hyper Transfer Process", "Hyper Tool Protocol"], a: 0},
+    {q: "Which device converts digital signals to analog?", o: ["Router", "Modem", "Switch", "Hub"], a: 1},
+    {q: "Which of the following is an input device?", o: ["Printer", "Plotter", "Scanner", "Speaker"], a: 2},
+    {q: "Shortcut key to copy text in Windows?", o: ["Ctrl+V", "Ctrl+C", "Ctrl+X", "Ctrl+Z"], a: 1},
+    {q: "Full form of CPU is:", o: ["Central Processing Unit", "Computer Processing Unit", "Central Program Unit", "Control Processing Unit"], a: 0},
+    {q: "Which of the following is system software?", o: ["MS Excel", "Windows OS", "Photoshop", "Chrome"], a: 1},
+    {q: "Number system used by computers internally?", o: ["Decimal", "Octal", "Binary", "Hexadecimal"], a: 2},
+    {q: "Which part temporarily stores data/instructions?", o: ["Cache", "ROM", "RAM", "Hard Disk"], a: 2},
+    {q: "File extension used for Excel files?", o: [".docx", ".xlsx", ".pptx", ".txt"], a: 1},
+    {q: "What is the function of an operating system?", o: ["Compile programs", "Manage hardware", "Create documents", "Browse internet"], a: 1},
+    {q: "Which key is used to refresh a webpage?", o: ["F1", "F2", "F5", "F10"], a: 2},
+    {q: "Which of the following is NOT a programming language?", o: ["Python", "Java", "HTML", "Oracle"], a: 3},
+    {q: "Which storage device has the fastest access time?", o: ["Hard Disk", "CD-ROM", "SSD", "Floppy Disk"], a: 2},
+    {q: "What does URL stand for?", o: ["Uniform Resource Locator", "Universal Link", "Unique Location", "Unified Link"], a: 0},
+    {q: "What is used to protect a computer from viruses?", o: ["Firewall", "Antivirus", "Router", "Modem"], a: 1},
+    {q: "Topology connecting all devices to a central hub?", o: ["Ring", "Bus", "Star", "Mesh"], a: 2},
+    {q: "What is the full form of USB?", o: ["Universal System Bus", "Unique Serial Bus", "Universal Serial Bus", "Unified Service Bus"], a: 2},
+    {q: "Example of cloud storage?", o: ["Pen Drive", "Google Drive", "DVD", "Hard Disk"], a: 1}
 ];
 
 let rCode = "", myN = "", isH = false, qIdx = -1, myQ = [], isDQ = false, gameRun = false;
 
-// --- ANTI-CHEAT ---
+// --- ANTI-CHEAT (DQ RULE) ---
 window.addEventListener('blur', () => {
     if(!isH && gameRun && !isDQ) {
-        isDQ = true; db.ref(`rooms/${rCode}/players/${myN}`).update({ dq: true }); nav('sc-dq');
+        isDQ = true; 
+        db.ref(`rooms/${rCode}/players/${myN}`).update({ dq: true }); 
+        nav('sc-dq');
     }
 });
 
@@ -218,8 +239,8 @@ function initSync() {
         const data = snap.val(); if(!data) return;
         if(data.status === 'lobby') {
             nav('sc-lobby'); document.getElementById('l-code').innerText = rCode;
-            let list = "Players: "; for(let p in data.players) list += p + ", ";
-            document.getElementById('p-list').innerText = list;
+            let list = "<b>Waiting for players:</b><br>"; for(let p in data.players) list += p + ", ";
+            document.getElementById('p-list').innerHTML = list;
             if(isH) document.getElementById('start-btn').classList.remove('hidden');
         }
         if(data.status === 'playing') {
@@ -229,7 +250,7 @@ function initSync() {
                 const pD = data.players ? data.players[myN] : null;
                 if(!isH && pD) {
                     if(pD.dq) { isDQ = true; nav('sc-dq'); }
-                    else if(pD.done) { document.getElementById('q-txt').innerText = "All done!"; document.getElementById('opt-zone').innerHTML = "Waiting for results..."; }
+                    else if(pD.done) { document.getElementById('q-txt').innerText = "Test Complete!"; document.getElementById('opt-zone').innerHTML = "Calculating results..."; }
                     else renderQ(pD.cur);
                 }
             }
@@ -244,7 +265,7 @@ function initSync() {
 function renderQ(idx) {
     if(qIdx === idx) return; qIdx = idx;
     const q = myQ[idx];
-    document.getElementById('q-txt').innerText = `Q${idx + 1}: ${q.q}`;
+    document.getElementById('q-txt').innerText = `Question ${idx + 1}: ${q.q}`;
     let html = "";
     q.o.forEach((o) => html += `<button class="opt-btn" onclick="sendAns('${o}', ${idx})">${o}</button>`);
     document.getElementById('opt-zone').innerHTML = html;
@@ -268,10 +289,11 @@ function startQuiz() { db.ref('rooms/' + rCode).update({ status: 'playing' }); }
 function updateBoard(ps, target = 'l-board') {
     let s = []; for(let p in ps) s.push({n:p, pts:ps[p].pts, dq:ps[p].dq});
     s.sort((a,b) => b.pts - a.pts);
-    let html = "<b>Live Leaderboard:</b><br>";
+    let html = "<b>Ranking:</b><br>";
     s.forEach((x, i) => {
-        let tag = x.dq ? "<span style='color:red'> [DQ]</span>" : "";
-        html += `<div class="board-row" style="${x.dq?'opacity:0.4':''}"><span>${i+1}. ${x.n}${tag}</span><span>${x.pts}/20</span></div>`;
+        let dqClass = x.dq ? "dq-row" : "";
+        let tag = x.dq ? " (DQ)" : "";
+        html += `<div class="board-row ${dqClass}"><span><b>${i+1}.</b> ${x.n}${tag}</span><span>${x.pts}/20</span></div>`;
     });
     document.getElementById(target).innerHTML = html;
 }
