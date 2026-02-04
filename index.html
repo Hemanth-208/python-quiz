@@ -2,50 +2,62 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>CyberTeam - Master Control</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberTeam - Hardcore Sprint</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
         :root { --blue: #00f3ff; --green: #00ff41; --pink: #ff00ff; --red: #ff3131; --bg: #05080a; }
         body { font-family: 'Courier New', monospace; background: var(--bg); color: #fff; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; overflow-x: hidden; }
-        .container { width: 95%; max-width: 700px; border: 2px solid var(--blue); padding: 25px; background: rgba(0,0,0,0.95); box-shadow: 0 0 20px var(--blue); }
-        .btn { background: transparent; color: var(--blue); border: 1px solid var(--blue); padding: 12px; cursor: pointer; width: 100%; margin: 8px 0; text-transform: uppercase; font-family: inherit; }
+        .container { width: 95%; max-width: 700px; border: 2px solid var(--blue); padding: 25px; background: rgba(0,0,0,0.95); box-shadow: 0 0 20px var(--blue); position: relative; }
+        
+        /* Buttons & Inputs */
+        .btn { background: transparent; color: var(--blue); border: 1px solid var(--blue); padding: 12px; cursor: pointer; width: 100%; margin: 8px 0; text-transform: uppercase; font-family: inherit; transition: 0.2s; }
         .btn:hover:not(:disabled) { background: var(--blue); color: #000; box-shadow: 0 0 10px var(--blue); }
-        .mini-btn { width: auto; padding: 4px 8px; font-size: 0.7em; color: var(--red); border-color: var(--red); margin-left: 10px; }
+        .mini-btn { width: auto; padding: 4px 8px; font-size: 0.7em; color: var(--red); border: 1px solid var(--red); margin-left: 10px; display: inline-block; }
         .mini-btn:hover { background: var(--red); color: #000; }
         .input-f { width: 100%; padding: 15px; background: transparent; border: 1px solid var(--green); color: var(--green); margin: 10px 0; outline: none; font-family: inherit; box-sizing: border-box; }
+        
         .hidden { display: none; }
-        .score-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #222; }
+        
+        /* Quiz UI */
+        .score-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #222; }
+        .timer-bar { height: 5px; background: var(--pink); width: 100%; transition: width 1s linear; margin-bottom: 15px; }
+        #q-text { font-size: 1.2em; margin-bottom: 20px; border-left: 3px solid var(--blue); padding-left: 10px; min-height: 50px; }
+        
+        /* Status Text */
         .dq-text { color: var(--red); font-weight: bold; animation: blink 1s infinite; }
         @keyframes blink { 50% { opacity: 0; } }
-        .timer-bar { height: 5px; background: var(--pink); width: 100%; transition: width 1s linear; margin-bottom: 15px; }
+        .waiting-msg { color: var(--green); text-align: center; font-style: italic; margin: 20px 0; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div id="start-menu">
-        <h2 style="color:var(--blue); text-align:center;">[ SYSTEM_OVERRIDE_ENABLED ]</h2>
+        <h2 style="color:var(--blue); text-align:center;">[ SYSTEM_CORE_v2 ]</h2>
         <button class="btn" onclick="showCreate()">Host as Creator</button>
         <button class="btn" onclick="showJoin()">Join as Player</button>
     </div>
 
     <div id="create-screen" class="hidden">
-        <input type="text" id="c-name" class="input-f" placeholder="CREATOR NAME">
-        <button class="btn" onclick="createTeam()">Open Secure Room</button>
+        <h2 style="color:var(--blue)">Creator Console</h2>
+        <input type="text" id="c-name" class="input-f" placeholder="ENTER YOUR NAME">
+        <button class="btn" onclick="createRoom()">Generate Room Code</button>
     </div>
 
     <div id="join-screen" class="hidden">
-        <input type="text" id="room-id" class="input-f" placeholder="CODE">
-        <input type="text" id="p-name" class="input-f" placeholder="PLAYER NAME">
-        <button class="btn" onclick="joinTeam()">Connect to Hub</button>
+        <h2 style="color:var(--blue)">Sync Protocol</h2>
+        <input type="text" id="room-id" class="input-f" placeholder="4-DIGIT CODE">
+        <input type="text" id="p-name" class="input-f" placeholder="YOUR NAME">
+        <button class="btn" onclick="joinRoom()">Connect to Host</button>
     </div>
 
     <div id="lobby-screen" class="hidden">
         <h3 id="display-host"></h3>
         <p>ROOM CODE: <span id="display-code" style="color:var(--pink); font-size:2em"></span></p>
         <div id="player-list" style="margin:20px 0; border:1px dashed #444; padding:10px;"></div>
-        <button id="start-btn" class="btn hidden" onclick="startQuiz()">INITIALIZE SPRINT</button>
+        <button id="start-btn" class="btn hidden" onclick="startQuiz()">ACTIVATE SPRINT</button>
     </div>
 
     <div id="quiz-screen" class="hidden">
@@ -54,25 +66,26 @@
             <span id="q-count">NODE 1/20</span>
             <span id="timer-num">30s</span>
         </div>
-        <div id="q-text" style="font-size: 1.2em; margin-bottom: 20px; border-left: 3px solid var(--blue); padding-left: 10px;"></div>
+        <div id="q-text"></div>
         <div id="interaction-zone"></div>
         <div id="live-leaderboard" style="margin-top:30px; border-top:1px solid var(--blue); padding-top:15px"></div>
     </div>
 
     <div id="dq-screen" class="hidden" style="text-align:center;">
-        <h1 class="dq-text" style="font-size:3em;">DISQUALIFIED</h1>
-        <p style="color:var(--red);">TAB CHANGE DETECTED. SYSTEM LOCKED.</p>
-        <p style="color:var(--blue); font-size: 0.8em;">Wait for the Creator to grant mercy...</p>
+        <h1 class="dq-text" style="font-size:2.5em;">ACCESS DENIED</h1>
+        <p style="color:var(--red);">TAB SWITCH DETECTED. YOU ARE DISQUALIFIED.</p>
+        <p style="color:var(--blue); font-size: 0.8em;">Contact the Creator to request UN-DQ.</p>
     </div>
 
     <div id="result-screen" class="hidden">
-        <h2 style="color:var(--blue); text-align:center;">[ MISSION_END ]</h2>
+        <h2 style="color:var(--blue); text-align:center;">[ MISSION_SUMMARY ]</h2>
         <div id="final-stats"></div>
-        <button class="btn" onclick="location.reload()">Reset System</button>
+        <button class="btn" onclick="location.reload()">Reboot System</button>
     </div>
 </div>
 
 <script>
+// REPLACE WITH YOUR FIREBASE CONFIG
 const firebaseConfig = {
   apiKey: "AIzaSyB-EQmy86TNealf_VZB32H3p-bWSyDNE9k",
   authDomain: "cyberquizsync.firebaseapp.com",
@@ -86,7 +99,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-let roomCode = "", myName = "", isHost = false, myCurrentIdx = 0, isDQ = false;
+let roomCode = "", myName = "", isHost = false, myCurrentIdx = -1, isDQ = false;
 let timerInt;
 
 const questions = [
@@ -116,11 +129,11 @@ function hide() { ['start-menu','create-screen','join-screen','lobby-screen','qu
 function showCreate() { hide(); document.getElementById('create-screen').classList.remove('hidden'); }
 function showJoin() { hide(); document.getElementById('join-screen').classList.remove('hidden'); }
 
-// Detection
-window.addEventListener('blur', () => { if(!isHost && !isDQ && roomCode) triggerDQ(); });
-document.addEventListener('visibilitychange', () => { if(document.hidden && !isHost && !isDQ && roomCode) triggerDQ(); });
+// --- ANTI-CHEAT LOGIC ---
+window.addEventListener('blur', () => { if(!isHost && !isDQ && roomCode) handleDQ(); });
+document.addEventListener('visibilitychange', () => { if(document.hidden && !isHost && !isDQ && roomCode) handleDQ(); });
 
-function triggerDQ() {
+function handleDQ() {
     db.ref(`rooms/${roomCode}/status`).once('value', (s) => {
         if(s.val() === 'playing') {
             isDQ = true;
@@ -130,7 +143,8 @@ function triggerDQ() {
     });
 }
 
-function createTeam() {
+// --- CORE FUNCTIONS ---
+function createRoom() {
     myName = document.getElementById('c-name').value.trim();
     if(!myName) return;
     roomCode = Math.floor(1000 + Math.random() * 9000).toString();
@@ -139,7 +153,7 @@ function createTeam() {
     initSync();
 }
 
-function joinTeam() {
+function joinRoom() {
     roomCode = document.getElementById('room-id').value.trim();
     myName = document.getElementById('p-name').value.trim();
     if(!roomCode || !myName) return;
@@ -163,32 +177,29 @@ function initSync() {
         }
 
         if(data.status === 'playing') {
-            const myStatus = data.players ? data.players[myName] : null;
+            const myData = data.players ? data.players[myName] : null;
             
-            // Check if un-disqualified
-            if(!isHost && isDQ && myStatus && !myStatus.disqualified) {
-                isDQ = false;
-                hide();
-                document.getElementById('quiz-screen').classList.remove('hidden');
+            // Sync DQ status (Allows for Mercy button)
+            if(!isHost && isDQ && myData && !myData.disqualified) {
+                isDQ = false; // Restore
             }
 
-            if(isDQ) {
-                hide();
-                document.getElementById('dq-screen').classList.remove('hidden');
+            if(isDQ && !isHost) {
+                hide(); document.getElementById('dq-screen').classList.remove('hidden');
             } else {
-                hide();
-                document.getElementById('quiz-screen').classList.remove('hidden');
+                hide(); document.getElementById('quiz-screen').classList.remove('hidden');
                 updateLeaderboard(data.players);
-                if(!isHost && myStatus) {
-                    if(myStatus.done) {
-                        document.getElementById('q-text').innerText = "DATA RETRIEVAL COMPLETE";
-                        document.getElementById('interaction-zone').innerHTML = "<p>Waiting for others...</p>";
+                if(!isHost && myData) {
+                    if(myData.done) {
+                        document.getElementById('q-text').innerText = "ALL NODES COMPLETED";
+                        document.getElementById('interaction-zone').innerHTML = "<p class='waiting-msg'>Waiting for mission end...</p>";
                         clearInterval(timerInt);
                     } else {
-                        renderQuestion(myStatus.currentQ);
+                        renderQuestion(myData.currentQ);
                     }
                 } else {
-                    document.getElementById('q-text').innerText = "LIVE FEED";
+                    document.getElementById('q-text').innerText = "MONITORING LIVE SPRINT...";
+                    document.getElementById('timer-ui').style.visibility = 'hidden';
                 }
             }
         }
@@ -201,13 +212,13 @@ function initSync() {
 }
 
 function renderQuestion(qIdx) {
-    if(myCurrentIdx !== qIdx || !document.getElementById('interaction-zone').hasChildNodes()) {
+    if(myCurrentIdx !== qIdx) {
         myCurrentIdx = qIdx;
         const q = questions[qIdx];
         document.getElementById('q-count').innerText = `NODE ${qIdx + 1}/20`;
         document.getElementById('q-text').innerText = q.q;
         let opts = "";
-        q.o.forEach((o, i) => { opts += `<button class="btn" onclick="checkAns(${i}, ${qIdx})">${o}</button>`; });
+        q.o.forEach((o, i) => { opts += `<button class="btn" onclick="checkAnswer(${i}, ${qIdx})">${o}</button>`; });
         document.getElementById('interaction-zone').innerHTML = opts;
         startTimer();
     }
@@ -222,30 +233,34 @@ function startTimer() {
         timeLeft--;
         num.innerText = timeLeft + "s";
         bar.style.width = (timeLeft / 30 * 100) + "%";
-        if(timeLeft <= 0) { nextQuestion(); }
+        if(timeLeft <= 0) moveNext();
     }, 1000);
 }
 
-function checkAns(idx, qIdx) {
-    if(idx === questions[qIdx].a) db.ref(`rooms/${roomCode}/players/${myName}/points`).transaction(p => (p || 0) + 2);
-    nextQuestion();
+function checkAnswer(idx, qIdx) {
+    document.getElementById('interaction-zone').innerHTML = ""; // One-strike: remove buttons instantly
+    if(idx === questions[qIdx].a) {
+        db.ref(`rooms/${roomCode}/players/${myName}/points`).transaction(p => (p || 0) + 2);
+    }
+    moveNext();
 }
 
-function nextQuestion() {
+function moveNext() {
     clearInterval(timerInt);
     const nextIdx = myCurrentIdx + 1;
-    if(nextIdx < questions.length) db.ref(`rooms/${roomCode}/players/${myName}`).update({ currentQ: nextIdx });
-    else {
+    if(nextIdx < questions.length) {
+        db.ref(`rooms/${roomCode}/players/${myName}`).update({ currentQ: nextIdx });
+    } else {
         db.ref(`rooms/${roomCode}/players/${myName}`).update({ done: true });
-        checkFinalSync();
+        checkRoomFinished();
     }
 }
 
-function checkFinalSync() {
-    db.ref('rooms/' + roomCode + '/players').once('value', snap => {
-        let allFinished = true;
-        snap.forEach(p => { if(!p.val().done && !p.val().disqualified) allFinished = false; });
-        if(allFinished) db.ref('rooms/' + roomCode).update({ status: 'finished' });
+function checkRoomFinished() {
+    db.ref(`rooms/${roomCode}/players`).once('value', snap => {
+        let allDone = true;
+        snap.forEach(p => { if(!p.val().done && !p.val().disqualified) allDone = false; });
+        if(allDone) db.ref('rooms/' + roomCode).update({ status: 'finished' });
     });
 }
 
@@ -253,14 +268,23 @@ function startQuiz() { db.ref('rooms/' + roomCode).update({ status: 'playing' })
 
 function updateLeaderboard(players, targetId = 'live-leaderboard') {
     let scores = [];
-    for(let p in players) { scores.push({name: p, pts: players[p].points, dq: players[p].disqualified}); }
+    for(let p in players) { 
+        scores.push({ 
+            name: p, 
+            pts: players[p].points || 0, 
+            dq: players[p].disqualified || false 
+        }); 
+    }
     scores.sort((a,b) => b.pts - a.pts);
+    
     let html = "<strong>RANKINGS:</strong>";
     scores.forEach((s, i) => {
-        const dqTag = s.dq ? `<span class="dq-text"> [DQ]</span>` : '';
-        const mercyBtn = (isHost && s.dq) ? `<button class="btn mini-btn" onclick="giveMercy('${s.name}')">UN-DQ</button>` : '';
-        html += `<div class="score-row" style="color:${s.dq ? 'var(--red)' : 'var(--green)'}">
-                    <span>#${i+1} ${s.name}${dqTag}${mercyBtn}</span>
+        const color = s.dq ? 'var(--red)' : 'var(--green)';
+        const dqLabel = s.dq ? `<span class="dq-text"> [DQ]</span>` : '';
+        const mercyBtn = (isHost && s.dq) ? `<button class="mini-btn" onclick="giveMercy('${s.name}')">UN-DQ</button>` : '';
+        
+        html += `<div class="score-row" style="color:${color}">
+                    <span>#${i+1} ${s.name}${dqLabel}${mercyBtn}</span>
                     <span>${s.pts} PTS</span>
                  </div>`;
     });
