@@ -3,171 +3,193 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hardware Quiz | Cyber Edition</title>
+    <title>CyberSprint | Matrix Authority Final</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     
     <style>
         :root {
-            --primary: #00f3ff; --primary-glow: rgba(0, 243, 255, 0.4);
-            --bg: #050508; --card: rgba(20, 22, 30, 0.95);
-            --text: #ffffff; --danger: #ff3131; --success: #00ff41;
+            --primary: #00f3ff; --secondary: #7000ff; --success: #00ff41;
+            --danger: #ff3131; --bg-dark: #050608;
+            --gold: #ffd700; --silver: #e0e0e0; --bronze: #cd7f32;
         }
 
-        * { box-sizing: border-box; font-family: 'Inter', 'Segoe UI', sans-serif; }
+        * { box-sizing: border-box; transition: all 0.2s ease; }
         
-        @media (pointer: fine) { * { cursor: none !important; } #pencil-cursor { display: block; } }
-        @media (pointer: coarse) { * { cursor: auto !important; } #pencil-cursor { display: none !important; } }
+        @media (pointer: fine) {
+            * { cursor: none !important; }
+            #pencil-cursor { display: block; }
+        }
+        @media (pointer: coarse) {
+            * { cursor: auto !important; }
+            #pencil-cursor { display: none !important; }
+        }
 
-        body { 
-            margin: 0; background: var(--bg); color: var(--text);
+        body {
+            margin: 0; background: var(--bg-dark); color: #fff;
+            font-family: 'Segoe UI', system-ui, sans-serif;
             display: flex; justify-content: center; align-items: center; min-height: 100vh;
-            overflow: hidden; touch-action: manipulation;
+            overflow: hidden;
         }
 
-        /* --- MATRIX ANIMATION --- */
-        #bg-canvas { position: fixed; top: 0; left: 0; z-index: -2; opacity: 0.18; }
-
-        /* --- PENCIL CURSOR --- */
-        #pencil-cursor { position: fixed; pointer-events: none; z-index: 10001; width: 30px; height: 30px; transform: translate(-2px, -28px); }
-        .pencil-svg { fill: var(--primary); filter: drop-shadow(0 0 8px var(--primary)); }
-        .trail-dot { position: fixed; width: 4px; height: 4px; background: var(--primary); border-radius: 50%; pointer-events: none; animation: fade 0.6s forwards; }
-        @keyframes fade { from { opacity: 1; } to { opacity: 0; transform: scale(0); } }
-
-        /* --- AESTHETIC CONTAINER --- */
-        .container {
-            width: 90%; max-width: 420px; background: var(--card);
-            padding: 40px 30px; border-radius: 24px; 
-            border: 1px solid rgba(0, 243, 255, 0.3);
-            box-shadow: 0 0 40px rgba(0, 0, 0, 0.8), 0 0 20px var(--primary-glow);
-            text-align: center; backdrop-filter: blur(12px);
-            position: relative; z-index: 10;
+        #matrix-bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; opacity: 0.15;
         }
 
-        h1 { font-size: 2.2rem; margin: 0; color: var(--primary); letter-spacing: 3px; font-weight: 900; text-shadow: 0 0 10px var(--primary-glow); }
-        .tagline { font-size: 0.75rem; color: #666; margin-bottom: 30px; letter-spacing: 2px; text-transform: uppercase; }
+        #pencil-cursor {
+            position: fixed; pointer-events: none; z-index: 10000;
+            width: 35px; height: 35px; transform: translate(-2px, -30px);
+            transition: transform 0.05s linear;
+        }
+        .pencil-svg { fill: var(--primary); filter: drop-shadow(0 0 8px var(--primary)); transform: rotate(-15deg); }
+        
+        .trail-dot {
+            position: fixed; width: 4px; height: 4px; background: var(--primary);
+            border-radius: 50%; pointer-events: none; z-index: 9999;
+            box-shadow: 0 0 10px var(--primary); animation: fadeOut 0.8s forwards;
+        }
+        @keyframes fadeOut { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(0.2); } }
+
+        .glass-panel {
+            width: 95%; max-width: 500px; background: rgba(10, 10, 15, 0.85);
+            backdrop-filter: blur(20px); border: 1px solid rgba(0, 243, 255, 0.2);
+            border-radius: 30px; padding: 30px; box-shadow: 0 0 40px rgba(0,0,0,0.8);
+            position: relative; max-height: 90vh; overflow-y: auto;
+        }
+
+        #timer-bar {
+            position: absolute; top: 0; left: 0; height: 5px; 
+            background: var(--primary); width: 100%; transition: width 1s linear; 
+            box-shadow: 0 0 15px var(--primary); border-radius: 30px 30px 0 0;
+        }
+
+        #timer-text { font-weight: 900; color: var(--primary); font-size: 1.2rem; }
+        .timer-warning { color: var(--danger) !important; animation: blink 0.5s infinite; }
+
+        h2 { text-align: center; letter-spacing: 5px; font-weight: 200; text-transform: uppercase; margin-bottom: 20px; text-shadow: 0 0 10px var(--primary); }
+        
+        .btn, .opt-btn {
+            width: 100%; padding: 18px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1);
+            font-weight: 800; text-transform: uppercase; margin-top: 15px;
+            background: rgba(255,255,255,0.05); color: #fff; cursor: pointer;
+        }
+        .btn-primary { background: linear-gradient(45deg, var(--secondary), var(--primary)); border: none; box-shadow: 0 0 20px rgba(112, 0, 255, 0.4); }
+        .opt-btn:hover { border-color: var(--primary); background: rgba(0, 243, 255, 0.1); }
 
         input {
-            width: 100%; padding: 16px; margin-bottom: 12px; border-radius: 12px;
-            border: 1px solid #2a2d3e; background: rgba(0,0,0,0.4); color: white; 
-            font-size: 1rem; outline: none; transition: 0.3s;
+            width: 100%; padding: 15px; background: #000; border: 1px solid #333; 
+            color: var(--primary); border-radius: 12px; outline: none; margin-bottom: 10px;
         }
-        input:focus { border-color: var(--primary); box-shadow: 0 0 10px var(--primary-glow); }
-        
-        .btn {
-            width: 100%; padding: 16px; border-radius: 12px; border: none;
-            font-size: 1rem; font-weight: bold; text-transform: uppercase;
-            transition: 0.3s; margin-top: 10px; cursor: pointer; letter-spacing: 1px;
-        }
-        .btn-main { background: var(--primary); color: #000; box-shadow: 0 4px 15px var(--primary-glow); }
-        .btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
-        .btn:hover { transform: translateY(-2px); filter: brightness(1.2); }
 
-        .opt-btn { 
-            width: 100%; padding: 15px; margin-bottom: 12px; border-radius: 12px; 
-            background: rgba(255,255,255,0.03); border: 1px solid #2a2d3e; color: white; 
-            text-align: left; transition: 0.2s; font-size: 0.95rem;
-        }
-        .opt-btn:hover { border-color: var(--primary); background: rgba(0, 243, 255, 0.08); }
+        .podium-container { display: flex; align-items: flex-end; justify-content: center; gap: 10px; margin: 30px 0; height: 140px; }
+        .podium-step { width: 80px; border-radius: 12px 12px 5px 5px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 10px; }
+        .rank-1 { height: 100%; background: linear-gradient(180deg, var(--gold), #b8860b); order: 2; }
+        .rank-2 { height: 75%; background: linear-gradient(180deg, var(--silver), #707070); order: 1; }
+        .rank-3 { height: 55%; background: linear-gradient(180deg, var(--bronze), #804a00); order: 3; }
+        .podium-name { font-weight: 900; color: #000; font-size: 0.65rem; text-align: center; width: 90%; overflow: hidden;}
 
-        /* --- RANKING UI --- */
-        .board-row { 
-            display: flex; justify-content: space-between; padding: 14px 18px; 
-            background: rgba(255,255,255,0.04); margin-bottom: 8px;
-            border-radius: 12px; font-size: 0.9rem; border-left: 4px solid #2a2d3e;
-        }
-        .rank-1 { border-left-color: #ffd700; background: rgba(255, 215, 0, 0.05); }
-        .dq-row { border-left-color: var(--danger); opacity: 0.4; }
-        
-        .hidden { display: none; }
+        .review-card { background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); padding: 15px; border-radius: 15px; margin-bottom: 10px; }
+        .rev-q { font-weight: 700; font-size: 0.9rem; color: var(--primary); margin-bottom: 8px; }
+        .rev-ans { font-size: 0.8rem; margin: 4px 0; padding: 5px; border-radius: 5px; }
+        .correct { background: rgba(0, 255, 65, 0.1); border-left: 3px solid var(--success); }
+        .wrong { background: rgba(255, 49, 49, 0.1); border-left: 3px solid var(--danger); }
+
+        @keyframes blink { 50% { opacity: 0.2; } }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-<canvas id="bg-canvas"></canvas>
-<div id="pencil-cursor"><svg class="pencil-svg" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></div>
+<canvas id="matrix-bg"></canvas>
 
-<div class="container">
+<div id="pencil-cursor">
+    <svg class="pencil-svg" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+</div>
+
+<div class="glass-panel">
+    <div id="timer-bar"></div>
+
     <div id="sc-home">
-        <h1>NEON QUIZ</h1>
-        <p class="tagline">Secure Diagnostic Link</p>
-        <button class="btn btn-main" onclick="nav('sc-create')">Create Room</button>
-        <button class="btn btn-outline" onclick="nav('sc-join')">Join Room</button>
+        <h2>CYBER<span style="color:var(--primary); font-weight:900;">SPRINT</span></h2>
+        <button class="btn btn-primary" onclick="nav('sc-create')">Host Session</button>
+        <button class="btn" onclick="nav('sc-join')">Join Mission</button>
     </div>
 
     <div id="sc-create" class="hidden">
-        <h1>HOST</h1>
-        <input type="text" id="c-name" placeholder="Enter Host Nickname">
-        <button class="btn btn-main" onclick="createRoom()">Initialize</button>
-        <button class="btn btn-outline" onclick="nav('sc-home')">Back</button>
+        <h2>IDENTIFY</h2>
+        <input type="text" id="c-name" placeholder="Agent Name">
+        <button class="btn btn-primary" onclick="createRoom()">Generate Sync Code</button>
     </div>
 
     <div id="sc-join" class="hidden">
-        <h1>JOIN</h1>
-        <input type="text" id="room-id" placeholder="4-Digit Code">
-        <input type="text" id="p-name" placeholder="Your Nickname">
-        <button class="btn btn-main" onclick="joinRoom()">Enter System</button>
-        <button class="btn btn-outline" onclick="nav('sc-home')">Back</button>
+        <h2>CONNECT</h2>
+        <input type="text" id="room-id" placeholder="Room ID">
+        <input type="text" id="p-name" placeholder="Player Alias">
+        <button class="btn btn-primary" onclick="joinRoom()">Synchronize</button>
     </div>
 
     <div id="sc-lobby" class="hidden">
-        <p class="tagline">Access Credentials</p>
-        <div id="l-code" style="font-size: 4rem; color: var(--primary); font-weight: 900; margin: 10px 0;">0000</div>
-        <div id="p-list" style="text-align: left; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px; font-size: 0.85rem; color: #888;"></div>
-        <button id="start-btn" class="btn btn-main hidden" onclick="startQuiz()" style="margin-top: 25px;">Execute Start</button>
+        <div id="l-code" style="text-align: center; font-size: 4rem; font-weight: 900; color: var(--primary);">0000</div>
+        <div id="p-list" style="margin:20px 0; max-height: 150px; overflow-y: auto; opacity: 0.6;"></div>
+        <button id="start-btn" class="btn btn-primary hidden" onclick="startQuiz()">Initiate Hack</button>
     </div>
 
     <div id="sc-quiz" class="hidden">
-        <div id="q-txt" style="font-size: 1.1rem; font-weight: 700; margin-bottom: 25px; text-align: left; line-height: 1.4;"></div>
+        <div style="text-align: center; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+            <span id="timer-text">30</span>
+            <button id="force-btn" class="hidden" onclick="forceFinish()" style="background:var(--danger); border:none; color:white; font-size:10px; padding:5px; border-radius:5px; cursor:pointer;">FORCE TERMINATE</button>
+        </div>
+        <div id="q-txt" style="font-size: 1.2rem; text-align: center; margin-bottom: 25px; font-weight: 600;"></div>
         <div id="opt-zone"></div>
-        <div id="l-board" style="margin-top: 35px; text-align: left;"></div>
+        <div id="l-board" style="margin-top:20px; font-size:0.7rem; border-top:1px solid rgba(255,255,255,0.1); padding-top:10px;"></div>
     </div>
 
-    <div id="sc-dq" class="hidden">
-        <h1 style="color:var(--danger)">LOCKED</h1>
-        <p style="margin: 20px 0; color: #888;">Security Breach: Tab switching detected. You are disqualified from this session.</p>
-        <button class="btn btn-outline" onclick="location.reload()">Terminate</button>
+    <div id="sc-dq" class="hidden" style="text-align:center;">
+        <h1 style="color:var(--danger); font-size:3rem;">VOID</h1>
+        <p>TAB SWITCH DETECTED. CONNECTION CUT.</p>
     </div>
 
     <div id="sc-res" class="hidden">
-        <h1>RECAP</h1>
-        <div id="f-stats" style="margin: 20px 0;"></div>
-        <button class="btn btn-main" onclick="location.reload()">Reboot Game</button>
+        <h2>RESULTS</h2>
+        <div id="podium-zone" class="podium-container"></div>
+        <div id="f-stats" style="margin-bottom: 20px;"></div>
+        <button class="btn btn-primary" onclick="showReview()">Review Mission Intel</button>
+        <button class="btn" onclick="location.reload()" style="font-size: 0.7rem;">Reset System</button>
+    </div>
+
+    <div id="sc-review" class="hidden">
+        <h2>MISSION LOG</h2>
+        <div id="review-list"></div>
+        <button class="btn btn-primary" onclick="nav('sc-res')">Back to Results</button>
     </div>
 </div>
 
 <script>
-// --- CORE MATRIX ---
-const canvas = document.getElementById('bg-canvas'); const ctx = canvas.getContext('2d');
-function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-window.onresize = resize; resize();
-const chars = "01010101ABCDEFHIJKLMNOPQRSTUVWXYZ"; const fontSize = 14;
-let drops = Array(Math.floor(window.innerWidth / fontSize)).fill(1);
+// MATRIX RAIN
+const canvas = document.getElementById('matrix-bg');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*";
+const fontSize = 16;
+const columns = canvas.width / fontSize;
+const drops = Array(Math.floor(columns)).fill(1);
 function drawMatrix() {
-    ctx.fillStyle = "rgba(5, 5, 8, 0.15)"; ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#00f3ff"; ctx.font = fontSize + "px monospace";
+    ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#00f3ff";
+    ctx.font = fontSize + "px monospace";
     for (let i = 0; i < drops.length; i++) {
-        const text = chars[Math.floor(Math.random() * chars.length)];
+        const text = letters.charAt(Math.floor(Math.random() * letters.length));
         ctx.fillText(text, i * fontSize, drops[i] * fontSize);
         if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
         drops[i]++;
     }
 }
-setInterval(drawMatrix, 55);
+setInterval(drawMatrix, 50);
 
-// --- CURSOR ---
-const pencil = document.getElementById('pencil-cursor');
-document.addEventListener('mousemove', (e) => {
-    if (window.getComputedStyle(pencil).display !== 'none') {
-        pencil.style.left = e.clientX + 'px'; pencil.style.top = e.clientY + 'px';
-        const dot = document.createElement('div'); dot.className = 'trail-dot';
-        dot.style.left = e.clientX + 'px'; dot.style.top = e.clientY + 'px';
-        document.body.appendChild(dot); setTimeout(() => dot.remove(), 600);
-    }
-});
-
-// --- FIREBASE DATA ---
+// FIREBASE
 const firebaseConfig = {
     apiKey: "AIzaSyB-EQmy86TNealf_VZB32H3p-bWSyDNE9k",
     authDomain: "cyberquizsync.firebaseapp.com",
@@ -180,67 +202,85 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-const masterQ = [
+let rCode = "", myN = "", isH = false, qIdx = -1, isDQed = false, timeLeft = 30, timerInterval;
+let myAnswers = [];
+
+const questions = [
     {q: "Which component is the brain of the computer?", o: ["RAM", "Hard Disk", "CPU", "Monitor"], a: 2},
-    {q: "Which memory is volatile (erased when off)?", o: ["ROM", "RAM", "SSD", "HDD"], a: 1},
-    {q: "What does HTTP stand for?", o: ["Hyper Text Transfer Protocol", "High Text Protocol", "Hyper Transfer Process", "Hyper Tool Protocol"], a: 0},
+    {q: "Which memory is volatile?", o: ["ROM", "RAM", "SSD", "HDD"], a: 1},
+    {q: "What does HTTP stand for?", o: ["Hyper Text Transfer Protocol", "High Text Transfer Protocol", "Hyper Transfer Text Process", "Hyper Tool Protocol"], a: 0},
     {q: "Which device converts digital signals to analog?", o: ["Router", "Modem", "Switch", "Hub"], a: 1},
     {q: "Which of the following is an input device?", o: ["Printer", "Plotter", "Scanner", "Speaker"], a: 2},
-    {q: "Shortcut key to copy text in Windows?", o: ["Ctrl+V", "Ctrl+C", "Ctrl+X", "Ctrl+Z"], a: 1},
+    {q: "Shortcut key to copy text in Windows?", o: ["Ctrl + V", "Ctrl + C", "Ctrl + X", "Ctrl + Z"], a: 1},
     {q: "Full form of CPU is:", o: ["Central Processing Unit", "Computer Processing Unit", "Central Program Unit", "Control Processing Unit"], a: 0},
     {q: "Which of the following is system software?", o: ["MS Excel", "Windows OS", "Photoshop", "Chrome"], a: 1},
     {q: "Number system used by computers internally?", o: ["Decimal", "Octal", "Binary", "Hexadecimal"], a: 2},
     {q: "Which part temporarily stores data/instructions?", o: ["Cache", "ROM", "RAM", "Hard Disk"], a: 2},
     {q: "File extension used for Excel files?", o: [".docx", ".xlsx", ".pptx", ".txt"], a: 1},
-    {q: "What is the function of an operating system?", o: ["Compile programs", "Manage hardware", "Create documents", "Browse internet"], a: 1},
+    {q: "What is the function of an operating system?", o: ["Compile programs", "Manage hardware resources", "Create documents", "Browse internet"], a: 1},
     {q: "Which key is used to refresh a webpage?", o: ["F1", "F2", "F5", "F10"], a: 2},
     {q: "Which of the following is NOT a programming language?", o: ["Python", "Java", "HTML", "Oracle"], a: 3},
     {q: "Which storage device has the fastest access time?", o: ["Hard Disk", "CD-ROM", "SSD", "Floppy Disk"], a: 2},
-    {q: "What does URL stand for?", o: ["Uniform Resource Locator", "Universal Link", "Unique Location", "Unified Link"], a: 0},
+    {q: "What does URL stand for?", o: ["Uniform Resource Locator", "Universal Resource Link", "Unique Reference Location", "Unified Resource Link"], a: 0},
     {q: "What is used to protect a computer from viruses?", o: ["Firewall", "Antivirus", "Router", "Modem"], a: 1},
     {q: "Topology connecting all devices to a central hub?", o: ["Ring", "Bus", "Star", "Mesh"], a: 2},
     {q: "What is the full form of USB?", o: ["Universal System Bus", "Unique Serial Bus", "Universal Serial Bus", "Unified Service Bus"], a: 2},
     {q: "Example of cloud storage?", o: ["Pen Drive", "Google Drive", "DVD", "Hard Disk"], a: 1}
 ];
 
-let rCode = "", myN = "", isH = false, qIdx = -1, myQ = [], isDQ = false, gameRun = false;
-
-// --- ANTI-CHEAT ENGINE ---
-window.addEventListener('blur', () => {
-    if(!isH && gameRun && !isDQ) {
-        isDQ = true; 
-        db.ref(`rooms/${rCode}/players/${myN}`).update({ dq: true }); 
-        nav('sc-dq');
+const pencil = document.getElementById('pencil-cursor');
+document.addEventListener('mousemove', (e) => {
+    if (window.matchMedia("(pointer: fine)").matches) {
+        pencil.style.left = e.clientX + 'px'; pencil.style.top = e.clientY + 'px';
+        const dot = document.createElement('div');
+        dot.className = 'trail-dot'; dot.style.left = e.clientX + 'px'; dot.style.top = e.clientY + 'px';
+        document.body.appendChild(dot); setTimeout(() => dot.remove(), 800);
     }
 });
 
-function shuffle(arr) {
-    let s = [...arr];
-    for (let i = s.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [s[i], s[j]] = [s[j], s[i]];
-    }
-    return s;
+function startTimer() {
+    clearInterval(timerInterval); timeLeft = 30;
+    const bar = document.getElementById('timer-bar');
+    const text = document.getElementById('timer-text');
+    timerInterval = setInterval(() => {
+        timeLeft--; text.innerText = timeLeft;
+        bar.style.width = (timeLeft / 30 * 100) + "%";
+        if(timeLeft <= 5) text.classList.add('timer-warning');
+        if(timeLeft <= 0) { clearInterval(timerInterval); sendAns(-1, qIdx); }
+    }, 1000);
 }
 
-function nav(id) {
-    document.querySelectorAll('.container > div').forEach(div => div.classList.add('hidden'));
+function nav(id) { 
+    ['sc-home','sc-create','sc-join','sc-lobby','sc-quiz','sc-dq','sc-res','sc-review'].forEach(s => document.getElementById(s).classList.add('hidden'));
     document.getElementById(id).classList.remove('hidden');
+}
+
+window.addEventListener('blur', () => { if(!isH && !isDQed && rCode) triggerDQ(); });
+
+function triggerDQ() {
+    db.ref(`rooms/${rCode}/status`).once('value', s => {
+        if(s.val() === 'playing') {
+            isDQed = true;
+            db.ref(`rooms/${rCode}/players/${myN}`).update({ disqualified: true });
+            nav('sc-dq');
+        }
+    });
 }
 
 function createRoom() {
     myN = document.getElementById('c-name').value.trim(); if(!myN) return;
-    rCode = Math.floor(1000 + Math.random() * 9000).toString(); isH = true;
-    db.ref('rooms/' + rCode).set({ status: 'lobby', creator: myN }); initSync();
+    rCode = Math.floor(1000 + Math.random() * 9000).toString();
+    isH = true; document.getElementById('force-btn').classList.remove('hidden');
+    db.ref('rooms/' + rCode).set({ status: 'lobby', creator: myN });
+    initSync();
 }
 
 async function joinRoom() {
-    rCode = document.getElementById('room-id').value.trim(); myN = document.getElementById('p-name').value.trim();
-    if(!rCode || !myN) return;
+    rCode = document.getElementById('room-id').value.trim();
+    myN = document.getElementById('p-name').value.trim();
     const snap = await db.ref('rooms/' + rCode).once('value');
     if (snap.exists()) {
-        myQ = shuffle(masterQ);
-        db.ref(`rooms/${rCode}/players/${myN}`).set({ pts: 0, cur: 0, done: false, dq: false });
+        db.ref(`rooms/${rCode}/players/${myN}`).set({ points: 0, currentQ: 0, done: false, disqualified: false });
         initSync();
     }
 }
@@ -250,61 +290,80 @@ function initSync() {
         const data = snap.val(); if(!data) return;
         if(data.status === 'lobby') {
             nav('sc-lobby'); document.getElementById('l-code').innerText = rCode;
-            let list = "<b>Waiting: </b>"; for(let p in data.players) list += p + ", ";
+            let list = ""; for(let p in data.players) list += `<div>• ${p}</div>`;
             document.getElementById('p-list').innerHTML = list;
             if(isH) document.getElementById('start-btn').classList.remove('hidden');
         }
         if(data.status === 'playing') {
-            gameRun = true;
-            if(!isDQ) {
+            const pD = data.players ? data.players[myN] : null;
+            if(pD && !pD.disqualified && isDQed) { isDQed = false; nav('sc-quiz'); }
+            if(!isDQed) {
                 nav('sc-quiz'); updateBoard(data.players);
-                const pD = data.players ? data.players[myN] : null;
                 if(!isH && pD) {
-                    if(pD.dq) { isDQ = true; nav('sc-dq'); }
-                    else if(pD.done) { document.getElementById('q-txt').innerText = "Syncing Scores..."; document.getElementById('opt-zone').innerHTML = "Wait for others to finish."; }
-                    else renderQ(pD.cur);
+                    if(pD.done) {
+                        clearInterval(timerInterval); document.getElementById('q-txt').innerText = "HACK COMPLETE";
+                        document.getElementById('opt-zone').innerHTML = "<p style='text-align:center;'>Stand by for final data...</p>";
+                    } else renderQ(pD.currentQ);
                 }
             }
         }
         if(data.status === 'finished') { 
-            gameRun = false; nav('sc-res'); updateBoard(data.players, 'f-stats'); 
-            if(!isDQ) confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+            nav('sc-res'); updateBoard(data.players, 'f-stats'); 
+            confetti({ particleCount: 150, spread: 70 });
         }
     });
 }
 
 function renderQ(idx) {
     if(qIdx === idx) return; qIdx = idx;
-    const q = myQ[idx];
-    document.getElementById('q-txt').innerText = `${idx + 1}. ${q.q}`;
-    let html = "";
-    q.o.forEach((o) => html += `<button class="opt-btn" onclick="sendAns('${o}', ${idx})">${o}</button>`);
+    startTimer(); const q = questions[idx];
+    document.getElementById('q-txt').innerText = q.q;
+    let html = ""; q.o.forEach((o, i) => html += `<button class="opt-btn" onclick="sendAns(${i}, ${idx})">${o}</button>`);
     document.getElementById('opt-zone').innerHTML = html;
 }
 
-function sendAns(sel, qI) {
-    const q = myQ[qI]; if(sel === q.o[q.a]) db.ref(`rooms/${rCode}/players/${myN}/pts`).transaction(p => (p||0)+1);
-    if(qIdx + 1 < myQ.length) db.ref(`rooms/${rCode}/players/${myN}`).update({ cur: qIdx + 1 });
+function sendAns(i, qI) {
+    clearInterval(timerInterval); myAnswers.push(i);
+    if(i !== -1 && i === questions[qI].a) db.ref(`rooms/${rCode}/players/${myN}/points`).transaction(p => (p||0)+2);
+    if(qIdx + 1 < questions.length) db.ref(`rooms/${rCode}/players/${myN}`).update({ currentQ: qIdx + 1 });
     else { db.ref(`rooms/${rCode}/players/${myN}`).update({ done: true }); checkF(); }
 }
 
 function checkF() {
     db.ref(`rooms/${rCode}/players`).once('value', snap => {
-        let ok = true; snap.forEach(p => { if(!p.val().done && !p.val().dq) ok = false; });
+        let ok = true; snap.forEach(p => { if(!p.val().done && !p.val().disqualified) ok = false; });
         if(ok) db.ref('rooms/' + rCode).update({ status: 'finished' });
     });
+}
+
+function restoreAgent(name) { if(isH) db.ref(`rooms/${rCode}/players/${name}`).update({ disqualified: false }); }
+function forceFinish() { if(isH && confirm("AGENT OVERRIDE: Finalize mission immediately?")) db.ref('rooms/' + rCode).update({ status: 'finished' }); }
+
+function showReview() {
+    nav('sc-review'); let html = "";
+    questions.forEach((q, idx) => {
+        let myA = myAnswers[idx]; let isC = myA === q.a;
+        html += `<div class="review-card"><div class="rev-q">${idx + 1}. ${q.q}</div><div class="rev-ans ${isC ? 'correct' : 'wrong'}"><b>Your Answer:</b> ${myA === -1 ? 'Time Out' : q.o[myA]}</div>${!isC ? `<div class="rev-ans correct"><b>Correct Answer:</b> ${q.o[q.a]}</div>` : ''}</div>`;
+    });
+    document.getElementById('review-list').innerHTML = html;
 }
 
 function startQuiz() { db.ref('rooms/' + rCode).update({ status: 'playing' }); }
 
 function updateBoard(ps, target = 'l-board') {
-    let s = []; for(let p in ps) s.push({n:p, pts:ps[p].pts, dq:ps[p].dq});
+    let s = []; for(let p in ps) s.push({n:p, pts:ps[p].points, dq:ps[p].disqualified});
     s.sort((a,b) => b.pts - a.pts);
-    let html = "<b>Leaderboard:</b><br><br>";
+    if(target === 'f-stats') {
+        let pod = "";
+        if(s[0]) pod += `<div class="podium-step rank-1"><div class="podium-name">${s[0].n}</div></div>`;
+        if(s[1]) pod += `<div class="podium-step rank-2"><div class="podium-name">${s[1].n}</div></div>`;
+        if(s[2]) pod += `<div class="podium-step rank-3"><div class="podium-name">${s[2].n}</div></div>`;
+        document.getElementById('podium-zone').innerHTML = pod;
+    }
+    let html = "";
     s.forEach((x, i) => {
-        let dqClass = x.dq ? "dq-row" : (i === 0 ? "rank-1" : "");
-        let tag = x.dq ? " [DQ]" : (i === 0 ? " 🏆" : "");
-        html += `<div class="board-row ${dqClass}"><span><b>${i+1}.</b> ${x.n}${tag}</span><span>${x.pts}/20</span></div>`;
+        let rsB = (isH && x.dq) ? `<button onclick="restoreAgent('${x.n}')" style="background:var(--success); color:#000; border:none; padding:2px 5px; border-radius:4px; font-weight:900; font-size:10px; cursor:pointer; margin-left:5px;">RE-SYNC</button>` : "";
+        html += `<div style="display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.05); ${x.dq?'opacity:0.6':''}"><span>${i+1}. ${x.n} ${x.dq?'<span style="color:var(--danger)">[DQ]</span>':''} ${rsB}</span><span style="color:var(--primary); font-weight:800;">${x.pts}</span></div>`;
     });
     document.getElementById(target).innerHTML = html;
 }
