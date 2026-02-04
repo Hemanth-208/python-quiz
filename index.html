@@ -2,67 +2,69 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>CyberTeam - Master Control</title>
+    <title>CyberTeam - Sprint Mode</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
         :root { --blue: #00f3ff; --green: #00ff41; --pink: #ff00ff; --bg: #05080a; }
         body { font-family: 'Courier New', monospace; background: var(--bg); color: #fff; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
         .container { width: 95%; max-width: 700px; border: 2px solid var(--blue); padding: 25px; background: rgba(0,0,0,0.95); box-shadow: 0 0 20px var(--blue); }
-        .btn { background: transparent; color: var(--blue); border: 1px solid var(--blue); padding: 12px; cursor: pointer; width: 100%; margin: 8px 0; text-transform: uppercase; font-family: inherit; }
+        .btn { background: transparent; color: var(--blue); border: 1px solid var(--blue); padding: 12px; cursor: pointer; width: 100%; margin: 8px 0; text-transform: uppercase; font-family: inherit; transition: 0.1s; }
         .btn:hover:not(:disabled) { background: var(--blue); color: #000; box-shadow: 0 0 10px var(--blue); }
         .input-f { width: 100%; padding: 15px; background: transparent; border: 1px solid var(--green); color: var(--green); margin: 10px 0; outline: none; font-family: inherit; box-sizing: border-box; }
         .hidden { display: none; }
-        .score-row { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #222; color: var(--green); }
-        .rank-1 { color: gold; font-weight: bold; text-shadow: 0 0 10px gold; }
-        #q-text { margin: 20px 0; font-size: 1.2em; border-left: 3px solid var(--pink); padding-left: 10px; }
+        .score-row { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #222; color: var(--green); }
+        .timer-bar { height: 5px; background: var(--pink); width: 100%; transition: width 1s linear; margin-bottom: 15px; }
+        #q-text { font-size: 1.2em; margin-bottom: 20px; border-left: 3px solid var(--blue); padding-left: 10px; min-height: 60px; }
+        .rank-1 { color: gold; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div id="start-menu">
-        <h2 style="color:var(--blue); text-align:center;">[ SYSTEM_ACCESS ]</h2>
+        <h2 style="color:var(--blue); text-align:center;">[ SPRINT_ACCESS ]</h2>
         <button class="btn" onclick="showCreate()">Host as Creator</button>
         <button class="btn" onclick="showJoin()">Join as Player</button>
     </div>
 
     <div id="create-screen" class="hidden">
-        <h2 style="color:var(--blue)">Setup Console</h2>
-        <input type="text" id="c-name" class="input-f" placeholder="YOUR NAME (CREATOR)">
-        <button class="btn" onclick="createTeam()">Create Room</button>
+        <input type="text" id="c-name" class="input-f" placeholder="CREATOR NAME">
+        <button class="btn" onclick="createTeam()">Open Room</button>
     </div>
 
     <div id="join-screen" class="hidden">
-        <h2 style="color:var(--blue)">Sync Link</h2>
         <input type="text" id="room-id" class="input-f" placeholder="4-DIGIT CODE">
-        <input type="text" id="p-name" class="input-f" placeholder="YOUR NAME">
-        <button class="btn" onclick="joinTeam()">Join Quiz</button>
+        <input type="text" id="p-name" class="input-f" placeholder="PLAYER NAME">
+        <button class="btn" onclick="joinTeam()">Link Start</button>
     </div>
 
     <div id="lobby-screen" class="hidden">
         <h3 id="display-host"></h3>
-        <p>ROOM CODE: <span id="display-code" style="color:var(--pink); font-size:2em"></span></p>
+        <p>CODE: <span id="display-code" style="color:var(--pink); font-size:2em"></span></p>
         <div id="player-list" style="margin:20px 0; border:1px dashed #444; padding:10px;"></div>
         <button id="start-btn" class="btn hidden" onclick="startQuiz()">ACTIVATE MISSION</button>
     </div>
 
     <div id="quiz-screen" class="hidden">
-        <div id="role-info" style="color:var(--pink); font-size:0.8em"></div>
+        <div id="timer-ui" class="timer-bar"></div>
+        <div style="display: flex; justify-content: space-between; color: var(--pink); font-size: 0.8em; margin-bottom: 5px;">
+            <span id="q-count">NODE 1/20</span>
+            <span id="timer-num">30s</span>
+        </div>
         <div id="q-text"></div>
         <div id="interaction-zone"></div>
         <div id="live-leaderboard" style="margin-top:30px; border-top:1px solid var(--blue); padding-top:15px"></div>
     </div>
 
     <div id="result-screen" class="hidden">
-        <h2 style="color:var(--blue); text-align:center;">[ MISSION_END ]</h2>
+        <h2 style="color:var(--blue); text-align:center;">[ MISSION_COMPLETE ]</h2>
         <div id="final-stats"></div>
-        <button class="btn" onclick="location.reload()">Reset</button>
+        <button class="btn" onclick="location.reload()">Reset System</button>
     </div>
 </div>
 
 <script>
-// Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyB-EQmy86TNealf_VZB32H3p-bWSyDNE9k",
   authDomain: "cyberquizsync.firebaseapp.com",
@@ -76,14 +78,13 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-let roomCode = "";
-let myName = "";
-let isHost = false;
+let roomCode = "", myName = "", isHost = false, myCurrentIdx = 0;
+let timerInt;
 
 const questions = [
     {q: "Which component is known as the brain of the computer?", o: ["RAM", "Hard Disk", "CPU", "Monitor"], a: 2},
     {q: "Which memory is volatile?", o: ["ROM", "RAM", "SSD", "HDD"], a: 1},
-    {q: "What does HTTP stand for?", o: ["Hyper Text Transfer Protocol", "High Text Transfer Protocol", "Hyper Transfer Text Process", "Hyper Tool Transfer Protocol"], a: 0},
+    {q: "What does HTTP stand for?", o: ["Hyper Text Transfer Protocol", "High Text Transfer Protocol", "Hyper Transfer Text Process", "Hyper Tool Protocol"], a: 0},
     {q: "Which device converts digital signals to analog?", o: ["Router", "Modem", "Switch", "Hub"], a: 1},
     {q: "Which of the following is an input device?", o: ["Printer", "Plotter", "Scanner", "Speaker"], a: 2},
     {q: "Shortcut key to copy text in Windows?", o: ["Ctrl + V", "Ctrl + C", "Ctrl + X", "Ctrl + Z"], a: 1},
@@ -92,7 +93,7 @@ const questions = [
     {q: "Number system used by computers internally?", o: ["Decimal", "Octal", "Binary", "Hexadecimal"], a: 2},
     {q: "Which part temporarily stores data/instructions?", o: ["Cache", "ROM", "RAM", "Hard Disk"], a: 2},
     {q: "File extension used for Excel files?", o: [".docx", ".xlsx", ".pptx", ".txt"], a: 1},
-    {q: "What is the function of an operating system?", o: ["Compile programs", "Manage hardware/software resources", "Create documents", "Browse internet"], a: 1},
+    {q: "What is the function of an operating system?", o: ["Compile programs", "Manage hardware resources", "Create documents", "Browse internet"], a: 1},
     {q: "Which key is used to refresh a webpage?", o: ["F1", "F2", "F5", "F10"], a: 2},
     {q: "Which of the following is NOT a programming language?", o: ["Python", "Java", "HTML", "Oracle"], a: 3},
     {q: "Which storage device has the fastest access time?", o: ["Hard Disk", "CD-ROM", "SSD", "Floppy Disk"], a: 2},
@@ -112,7 +113,7 @@ function createTeam() {
     if(!myName) return;
     roomCode = Math.floor(1000 + Math.random() * 9000).toString();
     isHost = true;
-    db.ref('rooms/' + roomCode).set({ status: 'lobby', currentQ: 0, creator: myName });
+    db.ref('rooms/' + roomCode).set({ status: 'lobby', creator: myName });
     initSync();
 }
 
@@ -120,7 +121,7 @@ function joinTeam() {
     roomCode = document.getElementById('room-id').value.trim();
     myName = document.getElementById('p-name').value.trim();
     if(!roomCode || !myName) return;
-    db.ref(`rooms/${roomCode}/players/${myName}`).set({ points: 0 });
+    db.ref(`rooms/${roomCode}/players/${myName}`).set({ points: 0, currentQ: 0, done: false });
     initSync();
 }
 
@@ -133,63 +134,102 @@ function initSync() {
             hide(); document.getElementById('lobby-screen').classList.remove('hidden');
             document.getElementById('display-host').innerText = `HOST: ${data.creator}`;
             document.getElementById('display-code').innerText = roomCode;
-            let list = `<strong>SYNCED USERS:</strong>`;
-            for(let p in data.players) { list += `<div>[PLAYER] ${p}</div>`; }
+            let list = `<strong>SYNCED PLAYERS:</strong>`;
+            for(let p in data.players) { list += `<div>> ${p}</div>`; }
             document.getElementById('player-list').innerHTML = list;
             if(isHost) document.getElementById('start-btn').classList.remove('hidden');
         }
 
         if(data.status === 'playing') {
             hide(); document.getElementById('quiz-screen').classList.remove('hidden');
-            const q = questions[data.currentQ];
-            document.getElementById('q-text').innerText = `Q${data.currentQ+1}: ${q.q}`;
-            document.getElementById('role-info').innerText = isHost ? "CREATOR MODE: VIEWING PROGRESS" : `PLAYER: ${myName}`;
+            updateLeaderboard(data.players);
 
             if(!isHost) {
-                let opts = "";
-                q.o.forEach((o, i) => { opts += `<button class="btn" onclick="checkAns(${i}, ${data.currentQ})">${o}</button>`; });
-                document.getElementById('interaction-zone').innerHTML = opts;
+                const myData = data.players[myName];
+                if(myData.done) {
+                    document.getElementById('q-text').innerText = "ALL NODES COMPLETED";
+                    document.getElementById('interaction-zone').innerHTML = "<p style='color:var(--green)'>Awaiting other players...</p>";
+                    clearInterval(timerInt);
+                } else {
+                    renderQuestion(myData.currentQ);
+                }
             } else {
-                document.getElementById('interaction-zone').innerHTML = "<p style='color:var(--green)'>Live sorting leaderboard below...</p>";
+                document.getElementById('q-text').innerText = "MONITORING LIVE SPRINT...";
+                document.getElementById('timer-ui').style.visibility = 'hidden';
             }
-
-            let scores = [];
-            for(let p in data.players) { scores.push({name: p, pts: data.players[p].points}); }
-            scores.sort((a,b) => b.pts - a.pts);
-            let html = "<strong>LIVE RANKINGS:</strong>";
-            scores.forEach((s, i) => {
-                html += `<div class="score-row ${i === 0 ? 'rank-1' : ''}"><span>#${i+1} ${s.name}</span><span>${s.pts} PTS</span></div>`;
-            });
-            document.getElementById('live-leaderboard').innerHTML = html;
         }
 
         if(data.status === 'finished') {
             hide(); document.getElementById('result-screen').classList.remove('hidden');
-            let scores = [];
-            for(let p in data.players) { scores.push({name: p, pts: data.players[p].points}); }
-            scores.sort((a,b) => b.pts - a.pts);
-            let html = "";
-            scores.forEach((s, i) => {
-                html += `<div class="score-row ${i === 0 ? 'rank-1' : ''}"><span>#${i+1} ${s.name}</span><span>${s.pts} PTS</span></div>`;
-            });
-            document.getElementById('final-stats').innerHTML = html;
+            updateLeaderboard(data.players, 'final-stats');
         }
     });
 }
 
 function startQuiz() { db.ref('rooms/' + roomCode).update({ status: 'playing' }); }
 
-function checkAns(idx, qIdx) {
-    if(idx === questions[qIdx].a) {
-        db.ref(`rooms/${roomCode}/players/${myName}/points`).transaction(p => (p || 0) + 2);
-        if(qIdx + 1 < questions.length) {
-            db.ref('rooms/' + roomCode).update({ currentQ: qIdx + 1 });
-        } else {
-            db.ref('rooms/' + roomCode).update({ status: 'finished' });
-        }
-    } else {
-        alert("INCORRECT.");
+function renderQuestion(qIdx) {
+    if(myCurrentIdx !== qIdx || !document.getElementById('interaction-zone').hasChildNodes()) {
+        myCurrentIdx = qIdx;
+        const q = questions[qIdx];
+        document.getElementById('q-count').innerText = `NODE ${qIdx + 1}/20`;
+        document.getElementById('q-text').innerText = q.q;
+        let opts = "";
+        q.o.forEach((o, i) => { opts += `<button class="btn" onclick="checkAns(${i}, ${qIdx})">${o}</button>`; });
+        document.getElementById('interaction-zone').innerHTML = opts;
+        startTimer();
     }
+}
+
+function startTimer() {
+    clearInterval(timerInt);
+    let timeLeft = 30;
+    const bar = document.getElementById('timer-ui');
+    const num = document.getElementById('timer-num');
+    timerInt = setInterval(() => {
+        timeLeft--;
+        num.innerText = timeLeft + "s";
+        bar.style.width = (timeLeft / 30 * 100) + "%";
+        if(timeLeft <= 0) { nextQuestion(false); }
+    }, 1000);
+}
+
+function checkAns(idx, qIdx) {
+    const isCorrect = idx === questions[qIdx].a;
+    if(isCorrect) {
+        db.ref(`rooms/${roomCode}/players/${myName}/points`).transaction(p => (p || 0) + 2);
+    }
+    nextQuestion(true);
+}
+
+function nextQuestion(wasAnswered) {
+    clearInterval(timerInt);
+    const nextIdx = myCurrentIdx + 1;
+    if(nextIdx < questions.length) {
+        db.ref(`rooms/${roomCode}/players/${myName}`).update({ currentQ: nextIdx });
+    } else {
+        db.ref(`rooms/${roomCode}/players/${myName}`).update({ done: true });
+        checkFinalSync();
+    }
+}
+
+function checkFinalSync() {
+    db.ref('rooms/' + roomCode + '/players').once('value', snap => {
+        let allFinished = true;
+        snap.forEach(p => { if(!p.val().done) allFinished = false; });
+        if(allFinished) db.ref('rooms/' + roomCode).update({ status: 'finished' });
+    });
+}
+
+function updateLeaderboard(players, targetId = 'live-leaderboard') {
+    let scores = [];
+    for(let p in players) { scores.push({name: p, pts: players[p].points}); }
+    scores.sort((a,b) => b.pts - a.pts);
+    let html = "<strong>RANKINGS:</strong>";
+    scores.forEach((s, i) => {
+        html += `<div class="score-row ${i === 0 ? 'rank-1' : ''}"><span>#${i+1} ${s.name}</span><span>${s.pts} PTS</span></div>`;
+    });
+    document.getElementById(targetId).innerHTML = html;
 }
 </script>
 </body>
