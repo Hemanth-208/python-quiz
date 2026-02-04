@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hardware Quiz | Full 20 Question Set</title>
+    <title>Hardware Quiz | Pro Edition</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -11,22 +11,15 @@
     <style>
         :root {
             --primary: #00f3ff; --bg: #050508; --card: rgba(22, 24, 33, 0.9);
-            --text: #ffffff; --success: #00ff41;
+            --text: #ffffff; --danger: #ff3131;
         }
 
         * { box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
         
-        /* Desktop Cursor Logic */
-        @media (pointer: fine) {
-            * { cursor: none !important; }
-            #pencil-cursor { display: block; }
-        }
-
-        /* Mobile Cursor Logic */
-        @media (pointer: coarse) {
-            * { cursor: auto !important; }
-            #pencil-cursor { display: none !important; }
-        }
+        /* Desktop Cursor */
+        @media (pointer: fine) { * { cursor: none !important; } #pencil-cursor { display: block; } }
+        /* Mobile Cursor */
+        @media (pointer: coarse) { * { cursor: auto !important; } #pencil-cursor { display: none !important; } }
 
         body { 
             margin: 0; background: var(--bg); color: var(--text);
@@ -35,7 +28,6 @@
         }
 
         #bg-canvas { position: fixed; top: 0; left: 0; z-index: -2; opacity: 0.15; }
-
         #pencil-cursor { position: fixed; pointer-events: none; z-index: 10001; width: 35px; height: 35px; transform: translate(-2px, -30px); }
         .pencil-svg { fill: var(--primary); filter: drop-shadow(0 0 5px var(--primary)); }
         .trail-dot { position: fixed; width: 4px; height: 4px; background: var(--primary); border-radius: 50%; pointer-events: none; animation: fade 0.6s forwards; }
@@ -48,12 +40,12 @@
             backdrop-filter: blur(10px); position: relative; z-index: 10;
         }
 
-        h1 { font-size: 1.8rem; margin-bottom: 10px; color: var(--primary); letter-spacing: 2px; }
-        p.subtitle { color: #a0a4c0; margin-bottom: 25px; font-size: 0.85rem; }
+        h1 { font-size: 1.8rem; margin-bottom: 5px; color: var(--primary); letter-spacing: 2px; }
+        .tagline { font-size: 0.7rem; color: #888; margin-bottom: 25px; text-transform: uppercase; }
 
         input {
             width: 100%; padding: 12px; margin-bottom: 12px; border-radius: 8px;
-            border: 1px solid #3f445e; background: rgba(0,0,0,0.5); color: white; font-size: 1rem; outline: none;
+            border: 1px solid #3f445e; background: rgba(0,0,0,0.5); color: white; outline: none;
         }
         
         .btn {
@@ -63,54 +55,37 @@
         }
         .btn-main { background: var(--primary); color: #000; }
         
-        .opt-btn {
-            width: 100%; padding: 14px; margin-bottom: 10px; border-radius: 8px;
-            background: rgba(255,255,255,0.05); border: 1px solid #3f445e; color: white; text-align: left;
+        .opt-btn { 
+            width: 100%; padding: 14px; margin-bottom: 10px; border-radius: 8px; 
+            background: rgba(255,255,255,0.05); border: 1px solid #3f445e; color: white; text-align: left; 
         }
-        
-        .board-row {
-            display: flex; justify-content: space-between; padding: 8px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.8rem;
-        }
+        .opt-btn:hover { background: rgba(0, 243, 255, 0.1); border-color: var(--primary); }
+
+        .board-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.8rem; }
         .hidden { display: none; }
     </style>
 </head>
 <body>
 
 <canvas id="bg-canvas"></canvas>
-
-<div id="pencil-cursor">
-    <svg class="pencil-svg" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
-</div>
+<div id="pencil-cursor"><svg class="pencil-svg" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></div>
 
 <div class="container">
     <div id="sc-home">
         <h1>HARDWARE QUIZ</h1>
-        <p class="subtitle">Complete Diagnostic Challenge</p>
+        <p class="tagline">Anti-Cheat Enabled | Individual Shuffle</p>
         <button class="btn btn-main" onclick="nav('sc-create')">Host Game</button>
         <button class="btn" onclick="nav('sc-join')">Join Game</button>
     </div>
 
-    <div id="sc-create" class="hidden">
-        <h1>CREATE ROOM</h1>
-        <input type="text" id="c-name" placeholder="Enter Your Name">
-        <button class="btn btn-main" onclick="createRoom()">Generate ID</button>
-        <button class="btn" onclick="nav('sc-home')">Back</button>
-    </div>
-
-    <div id="sc-join" class="hidden">
-        <h1>JOIN ROOM</h1>
-        <input type="text" id="room-id" placeholder="4-Digit Code">
-        <input type="text" id="p-name" placeholder="Your Name">
-        <button class="btn btn-main" onclick="joinRoom()">Connect</button>
-        <button class="btn" onclick="nav('sc-home')">Back</button>
-    </div>
+    <div id="sc-create" class="hidden"><h1>HOST</h1><input type="text" id="c-name" placeholder="Your Name"><button class="btn btn-main" onclick="createRoom()">Create Room</button></div>
+    <div id="sc-join" class="hidden"><h1>JOIN</h1><input type="text" id="room-id" placeholder="Room Code"><input type="text" id="p-name" placeholder="Nickname"><button class="btn btn-main" onclick="joinRoom()">Connect</button></div>
 
     <div id="sc-lobby" class="hidden">
-        <p class="subtitle">Room Code:</p>
+        <p>Room Code:</p>
         <div id="l-code" style="font-size: 3.5rem; color: var(--primary); font-weight: 800;">0000</div>
-        <div id="p-list" style="margin: 15px 0; text-align: left; opacity: 0.8; font-size: 0.9rem;"></div>
-        <button id="start-btn" class="btn btn-main hidden" onclick="startQuiz()">Launch Quiz</button>
+        <div id="p-list" style="margin: 20px 0; text-align: left;"></div>
+        <button id="start-btn" class="btn btn-main hidden" onclick="startQuiz()">Start Quiz</button>
     </div>
 
     <div id="sc-quiz" class="hidden">
@@ -119,21 +94,25 @@
         <div id="l-board" style="margin-top: 25px; text-align: left;"></div>
     </div>
 
+    <div id="sc-dq" class="hidden">
+        <h1 style="color:var(--danger)">CHEATER DETECTED</h1>
+        <p>System locked. You left the quiz tab.</p>
+        <button class="btn" onclick="location.reload()">Back to Menu</button>
+    </div>
+
     <div id="sc-res" class="hidden">
-        <h1>DIAGNOSTIC COMPLETE</h1>
+        <h1>FINAL SCORES</h1>
         <div id="f-stats" style="margin: 20px 0;"></div>
-        <button class="btn btn-main" onclick="location.reload()">Restart System</button>
+        <button class="btn btn-main" onclick="location.reload()">Play Again</button>
     </div>
 </div>
 
 <script>
-// --- BACKGROUND ---
-const canvas = document.getElementById('bg-canvas');
-const ctx = canvas.getContext('2d');
+// --- MATRIX BACKGROUND ---
+const canvas = document.getElementById('bg-canvas'); const ctx = canvas.getContext('2d');
 function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
 window.onresize = resize; resize();
-const chars = "01010101ABCDEFHIJKLMNOPQRSTUVWXYZ";
-const fontSize = 14;
+const chars = "01010101ABCDEFHIJKLMNOPQRSTUVWXYZ"; const fontSize = 14;
 let drops = Array(Math.floor(window.innerWidth / fontSize)).fill(1);
 function drawMatrix() {
     ctx.fillStyle = "rgba(0, 0, 0, 0.05)"; ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -147,15 +126,14 @@ function drawMatrix() {
 }
 setInterval(drawMatrix, 50);
 
-// --- CURSOR (DESKTOP) ---
+// --- CURSOR ---
 const pencil = document.getElementById('pencil-cursor');
 document.addEventListener('mousemove', (e) => {
     if (window.getComputedStyle(pencil).display !== 'none') {
         pencil.style.left = e.clientX + 'px'; pencil.style.top = e.clientY + 'px';
-        const dot = document.createElement('div');
-        dot.className = 'trail-dot'; dot.style.left = e.clientX + 'px'; dot.style.top = e.clientY + 'px';
-        document.body.appendChild(dot);
-        setTimeout(() => dot.remove(), 600);
+        const dot = document.createElement('div'); dot.className = 'trail-dot';
+        dot.style.left = e.clientX + 'px'; dot.style.top = e.clientY + 'px';
+        document.body.appendChild(dot); setTimeout(() => dot.remove(), 600);
     }
 });
 
@@ -172,53 +150,65 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-let rCode = "", myN = "", isH = false, qIdx = -1;
-
-const questions = [
-    {q: "Which component is the brain of the computer?", o: ["RAM", "Hard Disk", "CPU", "Monitor"], a: 2},
-    {q: "Which memory is volatile?", o: ["ROM", "RAM", "SSD", "HDD"], a: 1},
-    {q: "What does HTTP stand for?", o: ["Hyper Text Transfer Protocol", "High Text Protocol", "Hyper Transfer Process", "Hyper Tool Protocol"], a: 0},
-    {q: "Which device converts digital signals to analog?", o: ["Router", "Modem", "Switch", "Hub"], a: 1},
-    {q: "Which of the following is an input device?", o: ["Printer", "Plotter", "Scanner", "Speaker"], a: 2},
-    {q: "Shortcut key to copy text in Windows?", o: ["Ctrl + V", "Ctrl + C", "Ctrl + X", "Ctrl + Z"], a: 1},
-    {q: "Full form of CPU is:", o: ["Central Processing Unit", "Computer Processing Unit", "Central Program Unit", "Control Processing Unit"], a: 0},
-    {q: "Which of the following is system software?", o: ["MS Excel", "Windows OS", "Photoshop", "Chrome"], a: 1},
-    {q: "Number system used by computers internally?", o: ["Decimal", "Octal", "Binary", "Hexadecimal"], a: 2},
-    {q: "Which part temporarily stores data/instructions?", o: ["Cache", "ROM", "RAM", "Hard Disk"], a: 2},
-    {q: "File extension used for Excel files?", o: [".docx", ".xlsx", ".pptx", ".txt"], a: 1},
-    {q: "What is the function of an operating system?", o: ["Compile programs", "Manage hardware resources", "Create documents", "Browse internet"], a: 1},
-    {q: "Which key is used to refresh a webpage?", o: ["F1", "F2", "F5", "F10"], a: 2},
-    {q: "Which of the following is NOT a programming language?", o: ["Python", "Java", "HTML", "Oracle"], a: 3},
-    {q: "Which storage device has the fastest access time?", o: ["Hard Disk", "CD-ROM", "SSD", "Floppy Disk"], a: 2},
-    {q: "What does URL stand for?", o: ["Uniform Resource Locator", "Universal Resource Link", "Unique Reference Location", "Unified Resource Link"], a: 0},
-    {q: "What is used to protect a computer from viruses?", o: ["Firewall", "Antivirus", "Router", "Modem"], a: 1},
-    {q: "Topology connecting all devices to a central hub?", o: ["Ring", "Bus", "Star", "Mesh"], a: 2},
-    {q: "What is the full form of USB?", o: ["Universal System Bus", "Unique Serial Bus", "Universal Serial Bus", "Unified Service Bus"], a: 2},
-    {q: "Example of cloud storage?", o: ["Pen Drive", "Google Drive", "DVD", "Hard Disk"], a: 1}
+const masterQ = [
+    {q: "Brain of the computer?", o: ["RAM", "Hard Disk", "CPU", "Monitor"], a: 2},
+    {q: "Volatile memory?", o: ["ROM", "RAM", "SSD", "HDD"], a: 1},
+    {q: "HTTP full form?", o: ["Hyper Text Transfer Protocol", "High Text Protocol", "Hyper Transfer Process", "Hyper Tool Protocol"], a: 0},
+    {q: "Converts digital to analog?", o: ["Router", "Modem", "Switch", "Hub"], a: 1},
+    {q: "Input device example?", o: ["Printer", "Plotter", "Scanner", "Speaker"], a: 2},
+    {q: "Windows Copy Shortcut?", o: ["Ctrl+V", "Ctrl+C", "Ctrl+X", "Ctrl+Z"], a: 1},
+    {q: "CPU stands for?", o: ["Central Processing Unit", "Computer Processing Unit", "Central Program Unit", "Control Processing Unit"], a: 0},
+    {q: "System software example?", o: ["MS Excel", "Windows OS", "Photoshop", "Chrome"], a: 1},
+    {q: "Internal computer language?", o: ["Decimal", "Octal", "Binary", "Hexadecimal"], a: 2},
+    {q: "Temporary data storage?", o: ["Cache", "ROM", "RAM", "Hard Disk"], a: 2},
+    {q: "Excel file extension?", o: [".docx", ".xlsx", ".pptx", ".txt"], a: 1},
+    {q: "Primary function of OS?", o: ["Compile programs", "Manage hardware", "Create documents", "Browse web"], a: 1},
+    {q: "Refresh webpage key?", o: ["F1", "F2", "F5", "F10"], a: 2},
+    {q: "NOT a programming language?", o: ["Python", "Java", "HTML", "Oracle"], a: 3},
+    {q: "Fastest storage access?", o: ["Hard Disk", "CD-ROM", "SSD", "Floppy"], a: 2},
+    {q: "URL stands for?", o: ["Uniform Resource Locator", "Universal Link", "Unique Location", "Unified Link"], a: 0},
+    {q: "Protects against viruses?", o: ["Firewall", "Antivirus", "Router", "Modem"], a: 1},
+    {q: "Central hub topology?", o: ["Ring", "Bus", "Star", "Mesh"], a: 2},
+    {q: "USB full form?", o: ["Universal System Bus", "Unique Serial Bus", "Universal Serial Bus", "Unified Service Bus"], a: 2},
+    {q: "Cloud storage example?", o: ["Pen Drive", "Google Drive", "DVD", "Hard Disk"], a: 1}
 ];
 
-// --- LOGIC ---
+let rCode = "", myN = "", isH = false, qIdx = -1, myQ = [], isDQ = false, gameRun = false;
+
+// --- ANTI-CHEAT ---
+window.addEventListener('blur', () => {
+    if(!isH && gameRun && !isDQ) {
+        isDQ = true; db.ref(`rooms/${rCode}/players/${myN}`).update({ dq: true }); nav('sc-dq');
+    }
+});
+
+function shuffle(arr) {
+    let s = [...arr];
+    for (let i = s.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [s[i], s[j]] = [s[j], s[i]];
+    }
+    return s;
+}
+
 function nav(id) {
     document.querySelectorAll('.container > div').forEach(div => div.classList.add('hidden'));
     document.getElementById(id).classList.remove('hidden');
 }
 
 function createRoom() {
-    myN = document.getElementById('c-name').value.trim();
-    if(!myN) return;
-    rCode = Math.floor(1000 + Math.random() * 9000).toString();
-    isH = true;
-    db.ref('rooms/' + rCode).set({ status: 'lobby', creator: myN });
-    initSync();
+    myN = document.getElementById('c-name').value.trim(); if(!myN) return;
+    rCode = Math.floor(1000 + Math.random() * 9000).toString(); isH = true;
+    db.ref('rooms/' + rCode).set({ status: 'lobby', creator: myN }); initSync();
 }
 
 async function joinRoom() {
-    rCode = document.getElementById('room-id').value.trim();
-    myN = document.getElementById('p-name').value.trim();
+    rCode = document.getElementById('room-id').value.trim(); myN = document.getElementById('p-name').value.trim();
     if(!rCode || !myN) return;
     const snap = await db.ref('rooms/' + rCode).once('value');
     if (snap.exists()) {
-        db.ref(`rooms/${rCode}/players/${myN}`).set({ points: 0, currentQ: 0, done: false });
+        myQ = shuffle(masterQ);
+        db.ref(`rooms/${rCode}/players/${myN}`).set({ pts: 0, cur: 0, done: false, dq: false });
         initSync();
     }
 }
@@ -227,50 +217,48 @@ function initSync() {
     db.ref('rooms/' + rCode).on('value', (snap) => {
         const data = snap.val(); if(!data) return;
         if(data.status === 'lobby') {
-            nav('sc-lobby');
-            document.getElementById('l-code').innerText = rCode;
-            let list = "Connected: "; for(let p in data.players) list += p + ", ";
+            nav('sc-lobby'); document.getElementById('l-code').innerText = rCode;
+            let list = "Players: "; for(let p in data.players) list += p + ", ";
             document.getElementById('p-list').innerText = list;
             if(isH) document.getElementById('start-btn').classList.remove('hidden');
         }
         if(data.status === 'playing') {
-            nav('sc-quiz');
-            updateBoard(data.players);
-            const pD = data.players ? data.players[myN] : null;
-            if(!isH && pD) {
-                if(pD.done) {
-                    document.getElementById('q-txt').innerText = "All questions done!";
-                    document.getElementById('opt-zone').innerHTML = "Wait for others...";
-                } else renderQ(pD.currentQ);
+            gameRun = true;
+            if(!isDQ) {
+                nav('sc-quiz'); updateBoard(data.players);
+                const pD = data.players ? data.players[myN] : null;
+                if(!isH && pD) {
+                    if(pD.dq) { isDQ = true; nav('sc-dq'); }
+                    else if(pD.done) { document.getElementById('q-txt').innerText = "All done!"; document.getElementById('opt-zone').innerHTML = "Waiting for results..."; }
+                    else renderQ(pD.cur);
+                }
             }
         }
         if(data.status === 'finished') { 
-            nav('sc-res'); 
-            updateBoard(data.players, 'f-stats'); 
-            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+            gameRun = false; nav('sc-res'); updateBoard(data.players, 'f-stats'); 
+            if(!isDQ) confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
         }
     });
 }
 
 function renderQ(idx) {
     if(qIdx === idx) return; qIdx = idx;
-    const q = questions[idx];
+    const q = myQ[idx];
     document.getElementById('q-txt').innerText = `Q${idx + 1}: ${q.q}`;
     let html = "";
-    q.o.forEach((o, i) => html += `<button class="opt-btn" onclick="sendAns(${i}, ${idx})">${o}</button>`);
+    q.o.forEach((o) => html += `<button class="opt-btn" onclick="sendAns('${o}', ${idx})">${o}</button>`);
     document.getElementById('opt-zone').innerHTML = html;
 }
 
-function sendAns(i, qI) {
-    if(i === questions[qI].a) db.ref(`rooms/${rCode}/players/${myN}/points`).transaction(p => (p||0)+1);
-    if(qIdx + 1 < questions.length) db.ref(`rooms/${rCode}/players/${myN}`).update({ currentQ: qIdx + 1 });
+function sendAns(sel, qI) {
+    const q = myQ[qI]; if(sel === q.o[q.a]) db.ref(`rooms/${rCode}/players/${myN}/pts`).transaction(p => (p||0)+1);
+    if(qIdx + 1 < myQ.length) db.ref(`rooms/${rCode}/players/${myN}`).update({ cur: qIdx + 1 });
     else { db.ref(`rooms/${rCode}/players/${myN}`).update({ done: true }); checkF(); }
 }
 
 function checkF() {
     db.ref(`rooms/${rCode}/players`).once('value', snap => {
-        let ok = true;
-        snap.forEach(p => { if(!p.val().done) ok = false; });
+        let ok = true; snap.forEach(p => { if(!p.val().done && !p.val().dq) ok = false; });
         if(ok) db.ref('rooms/' + rCode).update({ status: 'finished' });
     });
 }
@@ -278,11 +266,12 @@ function checkF() {
 function startQuiz() { db.ref('rooms/' + rCode).update({ status: 'playing' }); }
 
 function updateBoard(ps, target = 'l-board') {
-    let s = []; for(let p in ps) s.push({n:p, pts:ps[p].points});
+    let s = []; for(let p in ps) s.push({n:p, pts:ps[p].pts, dq:ps[p].dq});
     s.sort((a,b) => b.pts - a.pts);
-    let html = "<b>Scores:</b><br>";
+    let html = "<b>Live Leaderboard:</b><br>";
     s.forEach((x, i) => {
-        html += `<div class="board-row"><span>${i+1}. ${x.n}</span><span>${x.pts} / 20</span></div>`;
+        let tag = x.dq ? "<span style='color:red'> [DQ]</span>" : "";
+        html += `<div class="board-row" style="${x.dq?'opacity:0.4':''}"><span>${i+1}. ${x.n}${tag}</span><span>${x.pts}/20</span></div>`;
     });
     document.getElementById(target).innerHTML = html;
 }
