@@ -3,89 +3,145 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CyberTeam - Hardcore Sprint</title>
+    <title>CyberTeam | Flashy Finale</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
-        :root { --blue: #00f3ff; --green: #00ff41; --pink: #ff00ff; --red: #ff3131; --bg: #05080a; }
-        body { font-family: 'Courier New', monospace; background: var(--bg); color: #fff; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; overflow-x: hidden; }
-        .container { width: 95%; max-width: 700px; border: 2px solid var(--blue); padding: 25px; background: rgba(0,0,0,0.95); box-shadow: 0 0 20px var(--blue); position: relative; }
+        :root {
+            --primary: #00f3ff; --secondary: #7000ff; --success: #00ff41;
+            --danger: #ff3131; --bg-dark: #050608;
+            --gold: #ffd700; --silver: #e0e0e0; --bronze: #cd7f32;
+        }
+
+        * { box-sizing: border-box; transition: all 0.3s ease; cursor: default; }
+        body {
+            margin: 0; background: var(--bg-dark); color: #fff;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            display: flex; justify-content: center; align-items: center; min-height: 100vh;
+            background-image: radial-gradient(circle at center, #1a1b26 0%, #000 100%);
+        }
+
+        .glass-panel {
+            width: 90%; max-width: 500px; background: rgba(15, 15, 20, 0.95);
+            backdrop-filter: blur(30px); border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 30px; padding: 40px; box-shadow: 0 0 50px rgba(0,0,0,1);
+            position: relative; overflow: hidden;
+        }
+
+        /* Flashy Podium */
+        .podium-container {
+            display: flex; align-items: flex-end; justify-content: center;
+            gap: 15px; margin: 50px 0 30px 0; height: 180px;
+        }
+
+        .podium-step {
+            width: 100px; border-radius: 15px 15px 5px 5px;
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: flex-end; padding-bottom: 15px;
+            position: relative; animation: slideUp 0.8s cubic-bezier(0.17, 0.67, 0.83, 0.67);
+        }
+
+        @keyframes slideUp { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .rank-1 { 
+            height: 100%; background: linear-gradient(180deg, var(--gold), #b8860b); 
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.6); order: 2; z-index: 3;
+            animation: pulse-gold 2s infinite linear;
+        }
+        .rank-2 { 
+            height: 70%; background: linear-gradient(180deg, var(--silver), #707070); 
+            box-shadow: 0 0 20px rgba(192, 192, 192, 0.4); order: 1; 
+        }
+        .rank-3 { 
+            height: 50%; background: linear-gradient(180deg, var(--bronze), #804a00); 
+            box-shadow: 0 0 20px rgba(205, 127, 50, 0.4); order: 3; 
+        }
+
+        @keyframes pulse-gold { 
+            0%, 100% { transform: scale(1); box-shadow: 0 0 30px rgba(255, 215, 0, 0.6); }
+            50% { transform: scale(1.05); box-shadow: 0 0 50px rgba(255, 215, 0, 0.8); }
+        }
+
+        .podium-emoji { font-size: 2.5rem; position: absolute; top: -45px; }
+        .podium-name { font-weight: 800; color: #000; font-size: 0.85rem; width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; }
+
+        /* General Styles */
+        h2 { text-align: center; letter-spacing: 5px; font-weight: 200; text-transform: uppercase; margin-bottom: 30px; }
+        .btn {
+            width: 100%; padding: 18px; border-radius: 15px; border: none; font-weight: 800;
+            cursor: pointer; text-transform: uppercase; margin-top: 15px;
+            background: #fff; color: #000;
+        }
+        .btn-primary { background: linear-gradient(45deg, var(--secondary), var(--primary)); color: #fff; }
         
-        /* Buttons & Inputs */
-        .btn { background: transparent; color: var(--blue); border: 1px solid var(--blue); padding: 12px; cursor: pointer; width: 100%; margin: 8px 0; text-transform: uppercase; font-family: inherit; transition: 0.2s; }
-        .btn:hover:not(:disabled) { background: var(--blue); color: #000; box-shadow: 0 0 10px var(--blue); }
-        .mini-btn { width: auto; padding: 4px 8px; font-size: 0.7em; color: var(--red); border: 1px solid var(--red); margin-left: 10px; display: inline-block; }
-        .mini-btn:hover { background: var(--red); color: #000; }
-        .input-f { width: 100%; padding: 15px; background: transparent; border: 1px solid var(--green); color: var(--green); margin: 10px 0; outline: none; font-family: inherit; box-sizing: border-box; }
-        
+        .opt-btn {
+            width: 100%; padding: 20px; margin-bottom: 12px; border-radius: 16px;
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            color: #ccc; cursor: pointer; text-align: left; font-size: 1rem;
+        }
+        .opt-btn:hover { background: rgba(255,255,255,0.1); border-color: var(--primary); color: #fff; }
+
         .hidden { display: none; }
-        
-        /* Quiz UI */
-        .score-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #222; }
-        .timer-bar { height: 5px; background: var(--pink); width: 100%; transition: width 1s linear; margin-bottom: 15px; }
-        #q-text { font-size: 1.2em; margin-bottom: 20px; border-left: 3px solid var(--blue); padding-left: 10px; min-height: 50px; }
-        
-        /* Status Text */
-        .dq-text { color: var(--red); font-weight: bold; animation: blink 1s infinite; }
-        @keyframes blink { 50% { opacity: 0; } }
-        .waiting-msg { color: var(--green); text-align: center; font-style: italic; margin: 20px 0; }
+        #master-fill { position: absolute; top: 0; left: 0; height: 5px; background: var(--primary); width: 0%; transition: width 0.5s ease; box-shadow: 0 0 15px var(--primary); }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div id="start-menu">
-        <h2 style="color:var(--blue); text-align:center;">[ SYSTEM_CORE_v2 ]</h2>
-        <button class="btn" onclick="showCreate()">Host as Creator</button>
-        <button class="btn" onclick="showJoin()">Join as Player</button>
+<div class="glass-panel">
+    <div id="master-fill"></div>
+
+    <div id="sc-home">
+        <h2>CYBER<span style="color:var(--primary); font-weight:900;">SPRINT</span></h2>
+        <button class="btn btn-primary" onclick="nav('sc-create')">Create Mission</button>
+        <button class="btn" onclick="nav('sc-join')" style="background:transparent; color:#fff; border:1px solid #333;">Join Network</button>
     </div>
 
-    <div id="create-screen" class="hidden">
-        <h2 style="color:var(--blue)">Creator Console</h2>
-        <input type="text" id="c-name" class="input-f" placeholder="ENTER YOUR NAME">
-        <button class="btn" onclick="createRoom()">Generate Room Code</button>
+    <div id="sc-create" class="hidden">
+        <h2>HOST</h2>
+        <input type="text" id="c-name" style="width:100%; padding:15px; background:#111; border:1px solid #333; color:#fff; border-radius:12px;" placeholder="Username">
+        <button class="btn btn-primary" onclick="createRoom()">Generate Link</button>
     </div>
 
-    <div id="join-screen" class="hidden">
-        <h2 style="color:var(--blue)">Sync Protocol</h2>
-        <input type="text" id="room-id" class="input-f" placeholder="4-DIGIT CODE">
-        <input type="text" id="p-name" class="input-f" placeholder="YOUR NAME">
-        <button class="btn" onclick="joinRoom()">Connect to Host</button>
+    <div id="sc-join" class="hidden">
+        <h2>SYNC</h2>
+        <input type="text" id="room-id" style="width:100%; padding:15px; background:#111; border:1px solid #333; color:#fff; border-radius:12px; margin-bottom:10px;" placeholder="Room ID">
+        <input type="text" id="p-name" style="width:100%; padding:15px; background:#111; border:1px solid #333; color:#fff; border-radius:12px;" placeholder="Player Name">
+        <button class="btn btn-primary" onclick="joinRoom()">Connect</button>
     </div>
 
-    <div id="lobby-screen" class="hidden">
-        <h3 id="display-host"></h3>
-        <p>ROOM CODE: <span id="display-code" style="color:var(--pink); font-size:2em"></span></p>
-        <div id="player-list" style="margin:20px 0; border:1px dashed #444; padding:10px;"></div>
-        <button id="start-btn" class="btn hidden" onclick="startQuiz()">ACTIVATE SPRINT</button>
+    <div id="sc-lobby" class="hidden">
+        <div id="l-code" style="text-align: center; font-size: 4rem; font-weight: 900; color: var(--primary);">0000</div>
+        <div id="p-list" style="margin:30px 0; max-height: 150px; overflow-y: auto; font-size: 0.9rem; opacity: 0.7;"></div>
+        <button id="start-btn" class="btn btn-primary hidden" onclick="startQuiz()">Launch Mission</button>
     </div>
 
-    <div id="quiz-screen" class="hidden">
-        <div id="timer-ui" class="timer-bar"></div>
-        <div style="display: flex; justify-content: space-between; color: var(--pink); font-size: 0.8em; margin-bottom: 5px;">
-            <span id="q-count">NODE 1/20</span>
-            <span id="timer-num">30s</span>
-        </div>
-        <div id="q-text"></div>
-        <div id="interaction-zone"></div>
-        <div id="live-leaderboard" style="margin-top:30px; border-top:1px solid var(--blue); padding-top:15px"></div>
+    <div id="sc-quiz" class="hidden">
+        <div id="q-txt" style="font-size: 1.4rem; text-align: center; margin-bottom: 30px; font-weight: 600;"></div>
+        <div id="opt-zone"></div>
+        <div id="l-board" style="margin-top:20px; font-size:0.8rem; opacity:0.6;"></div>
     </div>
 
-    <div id="dq-screen" class="hidden" style="text-align:center;">
-        <h1 class="dq-text" style="font-size:2.5em;">ACCESS DENIED</h1>
-        <p style="color:var(--red);">TAB SWITCH DETECTED. YOU ARE DISQUALIFIED.</p>
-        <p style="color:var(--blue); font-size: 0.8em;">Contact the Creator to request UN-DQ.</p>
+    <div id="sc-dq" class="hidden" style="text-align:center;">
+        <h1 style="color:var(--danger); font-size:3rem;">TERMINATED</h1>
+        <p>SECURITY BREACH: TAB CHANGE</p>
     </div>
 
-    <div id="result-screen" class="hidden">
-        <h2 style="color:var(--blue); text-align:center;">[ MISSION_SUMMARY ]</h2>
-        <div id="final-stats"></div>
-        <button class="btn" onclick="location.reload()">Reboot System</button>
+    <div id="sc-res" class="hidden">
+        <h2 style="letter-spacing: 2px;">MISSION COMPLETED</h2>
+        <div id="podium-zone" class="podium-container"></div>
+        <div id="f-stats" style="background:rgba(255,255,255,0.03); padding:15px; border-radius:15px;"></div>
+        <button class="btn btn-primary" onclick="location.reload()">Return to Base</button>
     </div>
 </div>
 
 <script>
-// REPLACE WITH YOUR FIREBASE CONFIG
+const audio = {
+    correct: new Audio('https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3'),
+    wrong: new Audio('https://assets.mixkit.co/active_storage/sfx/2658/2658-preview.mp3'),
+    dq: new Audio('https://assets.mixkit.co/active_storage/sfx/951/951-preview.mp3')
+};
+
 const firebaseConfig = {
   apiKey: "AIzaSyB-EQmy86TNealf_VZB32H3p-bWSyDNE9k",
   authDomain: "cyberquizsync.firebaseapp.com",
@@ -95,15 +151,13 @@ const firebaseConfig = {
   appId: "1:241572824298:web:8941756bda23f03af8c393",
   measurementId: "G-WRS1YXN3T2"
 };
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-let roomCode = "", myName = "", isHost = false, myCurrentIdx = -1, isDQ = false;
-let timerInt;
+let rCode = "", myN = "", isH = false, qIdx = -1, isDQed = false, tRef;
 
 const questions = [
-    {q: "Which component is known as the brain of the computer?", o: ["RAM", "Hard Disk", "CPU", "Monitor"], a: 2},
+    {q: "Which component is the brain of the computer?", o: ["RAM", "Hard Disk", "CPU", "Monitor"], a: 2},
     {q: "Which memory is volatile?", o: ["ROM", "RAM", "SSD", "HDD"], a: 1},
     {q: "What does HTTP stand for?", o: ["Hyper Text Transfer Protocol", "High Text Transfer Protocol", "Hyper Transfer Text Process", "Hyper Tool Protocol"], a: 0},
     {q: "Which device converts digital signals to analog?", o: ["Router", "Modem", "Switch", "Hub"], a: 1},
@@ -125,174 +179,129 @@ const questions = [
     {q: "Example of cloud storage?", o: ["Pen Drive", "Google Drive", "DVD", "Hard Disk"], a: 1}
 ];
 
-function hide() { ['start-menu','create-screen','join-screen','lobby-screen','quiz-screen','result-screen','dq-screen'].forEach(id => document.getElementById(id).classList.add('hidden')); }
-function showCreate() { hide(); document.getElementById('create-screen').classList.remove('hidden'); }
-function showJoin() { hide(); document.getElementById('join-screen').classList.remove('hidden'); }
+function nav(id) { 
+    ['sc-home','sc-create','sc-join','sc-lobby','sc-quiz','sc-dq', 'sc-res'].forEach(s => document.getElementById(s).classList.add('hidden'));
+    document.getElementById(id).classList.remove('hidden');
+}
 
-// --- ANTI-CHEAT LOGIC ---
-window.addEventListener('blur', () => { if(!isHost && !isDQ && roomCode) handleDQ(); });
-document.addEventListener('visibilitychange', () => { if(document.hidden && !isHost && !isDQ && roomCode) handleDQ(); });
+window.addEventListener('blur', () => { if(!isH && !isDQed && rCode) triggerDQ(); });
+document.addEventListener('visibilitychange', () => { if(document.hidden && !isH && !isDQed && rCode) triggerDQ(); });
 
-function handleDQ() {
-    db.ref(`rooms/${roomCode}/status`).once('value', (s) => {
+function triggerDQ() {
+    db.ref(`rooms/${rCode}/status`).once('value', (s) => {
         if(s.val() === 'playing') {
-            isDQ = true;
-            clearInterval(timerInt);
-            db.ref(`rooms/${roomCode}/players/${myName}`).update({ disqualified: true });
+            isDQed = true; audio.dq.play();
+            db.ref(`rooms/${rCode}/players/${myN}`).update({ disqualified: true });
+            nav('sc-dq');
         }
     });
 }
 
-// --- CORE FUNCTIONS ---
 function createRoom() {
-    myName = document.getElementById('c-name').value.trim();
-    if(!myName) return;
-    roomCode = Math.floor(1000 + Math.random() * 9000).toString();
-    isHost = true;
-    db.ref('rooms/' + roomCode).set({ status: 'lobby', creator: myName });
+    myN = document.getElementById('c-name').value.trim();
+    if(!myN) return;
+    rCode = Math.floor(1000 + Math.random() * 9000).toString();
+    isH = true;
+    db.ref('rooms/' + rCode).set({ status: 'lobby', creator: myN });
     initSync();
 }
 
 function joinRoom() {
-    roomCode = document.getElementById('room-id').value.trim();
-    myName = document.getElementById('p-name').value.trim();
-    if(!roomCode || !myName) return;
-    db.ref(`rooms/${roomCode}/players/${myName}`).set({ points: 0, currentQ: 0, done: false, disqualified: false });
+    rCode = document.getElementById('room-id').value.trim();
+    myN = document.getElementById('p-name').value.trim();
+    if(!rCode || !myN) return;
+    db.ref(`rooms/${rCode}/players/${myN}`).set({ points: 0, currentQ: 0, done: false, disqualified: false });
     initSync();
 }
 
 function initSync() {
-    db.ref('rooms/' + roomCode).on('value', (snap) => {
-        const data = snap.val();
-        if(!data) return;
-        
+    db.ref('rooms/' + rCode).on('value', (snap) => {
+        const data = snap.val(); if(!data) return;
         if(data.status === 'lobby') {
-            hide(); document.getElementById('lobby-screen').classList.remove('hidden');
-            document.getElementById('display-host').innerText = `CREATOR: ${data.creator}`;
-            document.getElementById('display-code').innerText = roomCode;
-            let list = `<strong>SYNCED PLAYERS:</strong>`;
-            for(let p in data.players) { list += `<div>> ${p}</div>`; }
-            document.getElementById('player-list').innerHTML = list;
-            if(isHost) document.getElementById('start-btn').classList.remove('hidden');
+            nav('sc-lobby');
+            document.getElementById('l-code').innerText = rCode;
+            let list = ""; for(let p in data.players) { list += `<div>• ${p}</div>`; }
+            document.getElementById('p-list').innerHTML = list;
+            if(isH) document.getElementById('start-btn').classList.remove('hidden');
         }
-
         if(data.status === 'playing') {
-            const myData = data.players ? data.players[myName] : null;
-            
-            // Sync DQ status (Allows for Mercy button)
-            if(!isHost && isDQ && myData && !myData.disqualified) {
-                isDQ = false; // Restore
-            }
-
-            if(isDQ && !isHost) {
-                hide(); document.getElementById('dq-screen').classList.remove('hidden');
-            } else {
-                hide(); document.getElementById('quiz-screen').classList.remove('hidden');
-                updateLeaderboard(data.players);
-                if(!isHost && myData) {
-                    if(myData.done) {
-                        document.getElementById('q-text').innerText = "ALL NODES COMPLETED";
-                        document.getElementById('interaction-zone').innerHTML = "<p class='waiting-msg'>Waiting for mission end...</p>";
-                        clearInterval(timerInt);
-                    } else {
-                        renderQuestion(myData.currentQ);
-                    }
-                } else {
-                    document.getElementById('q-text').innerText = "MONITORING LIVE SPRINT...";
-                    document.getElementById('timer-ui').style.visibility = 'hidden';
-                }
+            const pD = data.players ? data.players[myN] : null;
+            if(!isH && isDQed && pD && !pD.disqualified) { isDQed = false; nav('sc-quiz'); }
+            if(!isDQed) {
+                nav('sc-quiz');
+                updateBoard(data.players);
+                if(!isH && pD) {
+                    document.getElementById('master-fill').style.width = ((pD.currentQ / questions.length) * 100) + "%";
+                    if(pD.done) {
+                        document.getElementById('q-txt').innerText = "NODES COMPLETED";
+                        document.getElementById('opt-zone').innerHTML = "<p style='text-align:center; color:var(--success)'>Waiting for others to finish...</p>";
+                    } else { renderQ(pD.currentQ); }
+                } else { document.getElementById('q-txt').innerText = "LIVE SPECTATOR"; }
             }
         }
-
-        if(data.status === 'finished') {
-            hide(); document.getElementById('result-screen').classList.remove('hidden');
-            updateLeaderboard(data.players, 'final-stats');
+        if(data.status === 'finished') { 
+            nav('sc-res'); 
+            updateBoard(data.players, 'f-stats'); 
+            confetti({ particleCount: 250, spread: 100, origin: { y: 0.6 } });
         }
     });
 }
 
-function renderQuestion(qIdx) {
-    if(myCurrentIdx !== qIdx) {
-        myCurrentIdx = qIdx;
-        const q = questions[qIdx];
-        document.getElementById('q-count').innerText = `NODE ${qIdx + 1}/20`;
-        document.getElementById('q-text').innerText = q.q;
-        let opts = "";
-        q.o.forEach((o, i) => { opts += `<button class="btn" onclick="checkAnswer(${i}, ${qIdx})">${o}</button>`; });
-        document.getElementById('interaction-zone').innerHTML = opts;
-        startTimer();
-    }
+function renderQ(idx) {
+    if(qIdx === idx) return; qIdx = idx;
+    const q = questions[idx];
+    document.getElementById('q-txt').innerText = q.q;
+    let html = "";
+    q.o.forEach((o, i) => { html += `<button class="opt-btn" onclick="sendAns(${i}, ${idx})">${o}</button>`; });
+    document.getElementById('opt-zone').innerHTML = html;
 }
 
-function startTimer() {
-    clearInterval(timerInt);
-    let timeLeft = 30;
-    const bar = document.getElementById('timer-ui');
-    const num = document.getElementById('timer-num');
-    timerInt = setInterval(() => {
-        timeLeft--;
-        num.innerText = timeLeft + "s";
-        bar.style.width = (timeLeft / 30 * 100) + "%";
-        if(timeLeft <= 0) moveNext();
-    }, 1000);
-}
-
-function checkAnswer(idx, qIdx) {
-    document.getElementById('interaction-zone').innerHTML = ""; // One-strike: remove buttons instantly
-    if(idx === questions[qIdx].a) {
-        db.ref(`rooms/${roomCode}/players/${myName}/points`).transaction(p => (p || 0) + 2);
+function sendAns(i, qI) {
+    if(i === questions[qI].a) {
+        audio.correct.play();
+        db.ref(`rooms/${rCode}/players/${myN}/points`).transaction(p => (p||0)+2);
+    } else {
+        audio.wrong.play();
     }
     moveNext();
 }
 
 function moveNext() {
-    clearInterval(timerInt);
-    const nextIdx = myCurrentIdx + 1;
-    if(nextIdx < questions.length) {
-        db.ref(`rooms/${roomCode}/players/${myName}`).update({ currentQ: nextIdx });
-    } else {
-        db.ref(`rooms/${roomCode}/players/${myName}`).update({ done: true });
-        checkRoomFinished();
-    }
+    if(qIdx + 1 < questions.length) db.ref(`rooms/${rCode}/players/${myN}`).update({ currentQ: qIdx + 1 });
+    else { db.ref(`rooms/${rCode}/players/${myN}`).update({ done: true }); checkF(); }
 }
 
-function checkRoomFinished() {
-    db.ref(`rooms/${roomCode}/players`).once('value', snap => {
-        let allDone = true;
-        snap.forEach(p => { if(!p.val().done && !p.val().disqualified) allDone = false; });
-        if(allDone) db.ref('rooms/' + roomCode).update({ status: 'finished' });
+function checkF() {
+    db.ref(`rooms/${rCode}/players`).once('value', snap => {
+        let ok = true;
+        snap.forEach(p => { if(!p.val().done && !p.val().disqualified) ok = false; });
+        if(ok) db.ref('rooms/' + rCode).update({ status: 'finished' });
     });
 }
 
-function startQuiz() { db.ref('rooms/' + roomCode).update({ status: 'playing' }); }
+function startQuiz() { db.ref('rooms/' + rCode).update({ status: 'playing' }); }
 
-function updateLeaderboard(players, targetId = 'live-leaderboard') {
-    let scores = [];
-    for(let p in players) { 
-        scores.push({ 
-            name: p, 
-            pts: players[p].points || 0, 
-            dq: players[p].disqualified || false 
-        }); 
-    }
-    scores.sort((a,b) => b.pts - a.pts);
+function updateBoard(ps, target = 'l-board') {
+    let s = []; for(let p in ps) { s.push({n:p, pts:ps[p].points, dq:ps[p].disqualified}); }
+    s.sort((a,b) => b.pts - a.pts);
     
-    let html = "<strong>RANKINGS:</strong>";
-    scores.forEach((s, i) => {
-        const color = s.dq ? 'var(--red)' : 'var(--green)';
-        const dqLabel = s.dq ? `<span class="dq-text"> [DQ]</span>` : '';
-        const mercyBtn = (isHost && s.dq) ? `<button class="mini-btn" onclick="giveMercy('${s.name}')">UN-DQ</button>` : '';
-        
-        html += `<div class="score-row" style="color:${color}">
-                    <span>#${i+1} ${s.name}${dqLabel}${mercyBtn}</span>
-                    <span>${s.pts} PTS</span>
+    if(target === 'f-stats') {
+        let pod = "";
+        if(s[0]) pod += `<div class="podium-step rank-1"><div class="podium-emoji">👑</div><div class="podium-name">${s[0].n}</div></div>`;
+        if(s[1]) pod += `<div class="podium-step rank-2"><div class="podium-emoji">🥈</div><div class="podium-name">${s[1].n}</div></div>`;
+        if(s[2]) pod += `<div class="podium-step rank-3"><div class="podium-emoji">🥉</div><div class="podium-name">${s[2].n}</div></div>`;
+        document.getElementById('podium-zone').innerHTML = pod;
+    }
+
+    let html = `<p style="font-size:0.6rem; letter-spacing:1px; margin-bottom:10px;">STANDINGS</p>`;
+    s.forEach((x, i) => {
+        let rankTag = i === 0 ? "🏆" : (i === 1 ? "🥈" : (i === 2 ? "🥉" : ""));
+        html += `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.05); ${x.dq?'opacity:0.3;':''}">
+                    <span>${i+1}. ${rankTag} ${x.n}</span>
+                    <span style="color:var(--primary); font-weight:800;">${x.pts} PTS</span>
                  </div>`;
     });
-    document.getElementById(targetId).innerHTML = html;
-}
-
-function giveMercy(pName) {
-    db.ref(`rooms/${roomCode}/players/${pName}`).update({ disqualified: false });
+    document.getElementById(target).innerHTML = html;
 }
 </script>
 </body>
